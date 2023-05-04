@@ -1,9 +1,8 @@
 LINK = "https://raw.githubusercontent.com/sty00A4/turtlenet/main/"
 local function download(path, prefix)
     if type(prefix) ~= "string" then prefix = "turtlenet/" end
-    term.write("Downloading "..path.."... ")
+    print("Downloading "..prefix..path..":")
     shell.run(("wget %s%s %s%s"):format(LINK, path, prefix, path))
-    print("Done! ")
 end
 download "client/init.lua"
 download "server/client.lua"
@@ -14,4 +13,4 @@ download "init.lua"
 download "LICENSE"
 download "README.md"
 
-download("turtlenet.lua", "")
+download("turt.lua", "")

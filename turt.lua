@@ -12,6 +12,6 @@ elseif args[1] == "client" then
     return turtlenet.client.start(id)
 else
     print "USAGE:"
-    print "  ... server - starts as a server"
-    print "  ... client [serverID] - starts as a client (if the device is a turtle) and connects to the given server ID"
+    print "  turt server - starts as a server"
+    print "  turt client [serverID] - starts as a client (if the device is a turtle) and connects to the given server ID"
 end
