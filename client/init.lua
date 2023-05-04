@@ -51,6 +51,8 @@ function Turtle.init()
             forward = Turtle.forward, back = Turtle.back,
             up = Turtle.up, down = Turtle.down,
             left = Turtle.left, right = Turtle.right,
+
+            register = Turtle.register, listen = Turtle.listen,
         },
         Turtle.mt
     )
@@ -118,6 +120,41 @@ function Turtle:right()
     self.transform:right()
 end
 
-return {
+---@param self Turtle
+---@param id integer
+---@return boolean
+function Turtle:register(id)
+    rednet.send(id, { head = "register" })
+    local recvId, success
+    while recvId ~= id do
+        recvId, success = rednet.receive(NET_PROTOCOL)
+    end
+    return success
+end
+---@param self Turtle
+---@param id integer
+function Turtle:listen(id)
+    while true do
+        rednet.send(id, { head = "task", status = "request" })
+        local recvId, program
+        while recvId ~= id do
+            recvId, program = rednet.receive(NET_PROTOCOL)
+        end
+        if type(program) == "table" then
+            -- turtlang.runProgram(program)
+            rednet.send(id, { head = "task", status = "done" })
+        end
+    end
+end
 
+---@param id integer
+local function start(id)
+    local turtle = Turtle.init()
+    turtle:register(id)
+    turtle:listen(id)
+end
+
+return {
+    Turtle = Turtle,
+    start = start,
 }

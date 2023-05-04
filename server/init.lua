@@ -98,6 +98,7 @@ function Server:listen()
                         local client = client.Client.new(id, transform.Transform.zero())
                         self.log:push("info", ("%s is registered"):format(client), "server.Server.listen")
                         self:addClient(id, client)
+                        rednet.send(id, true)
                     elseif msg.head == "info" then
                         local client = self:client(id)
                         if client then
@@ -110,11 +111,13 @@ function Server:listen()
                             client.fuel = msg.fuel
                         end
                     elseif msg.head == "task" then
-                        local client = self:client(id)
-                        if client then
-                            rednet.send(id, table.remove(client.tasks), NET_PROTOCOL)
-                        else
-                            self.log:push("info", ("unregistered computer #%s is trying to request a task"), "server.Server.listen")
+                        if msg.status == "request" then
+                            local client = self:client(id)
+                            if client then
+                                rednet.send(id, table.remove(client.tasks), NET_PROTOCOL)
+                            else
+                                self.log:push("info", ("unregistered computer #%s is trying to request a task"), "server.Server.listen")
+                            end
                         end
                     end
                 end
