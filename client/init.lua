@@ -36,6 +36,7 @@ local Turtle = {
     }
 }
 function Turtle.init()
+    if not turtle then error("computer needs to be a turtle", 2) end
     ---@type Turtle
     local turt = setmetatable(
         ---@class Turtle
@@ -149,6 +150,7 @@ end
 
 ---@param id integer
 local function start(id)
+    if not turtle then error("computer needs to be a turtle", 2) end
     local turtle = Turtle.init()
     turtle:register(id)
     turtle:listen(id)
