@@ -1,28 +1,46 @@
-local log = require "turtlenet.log"
+local log = require "turtlenet.server.log"
+local client = require "turtlenet.server.client"
+local transform = require "turtlenet.server.transform"
+
+---@param turtInfo table
+---@param turt Client
+---@return TurtleInfo
+local function turtleInfo(turtInfo, turt)
+    if type(turtInfo) ~= "table" then turtInfo = {} end
+    turtInfo.x = turtInfo.x or turt.transform.position.x
+    turtInfo.y = turtInfo.y or turt.transform.position.y
+    turtInfo.z = turtInfo.z or turt.transform.position.z
+    turtInfo.direction = turtInfo.z or turt.transform.direction
+    turtInfo.inventory = turtInfo.inventory or turt.inventory
+    turtInfo.fuel = turtInfo.fuel or turt.fuel
+    return turtInfo
+end
 
 local Server = {
     mt = {
         __name = "server"
     }
 }
----@param handleRequests table<string, function>
 ---@return Server
-function Server.new(handleRequests)
+function Server.new()
     return setmetatable(
         ---@class Server
         {
-            handleRequests = handleRequests,
-
             ---@type table<integer, Client>
             clients = {},
             log = log.Log.new(),
             running = false,
             ---@type table<integer, boolean>
             blockedIds = {},
+            ---@type table<string, table<integer, string>>
+            events = {},
 
             client = Server.client, addClient = Server.addClient,
-            blocked = Server.blocked
-        }
+            blocked = Server.blocked,
+            listen = Server.listen, interface = Server.interface, eventListener = Server.eventListener,
+            run = Server.run
+        },
+        Server.mt
     )
 end
 
@@ -37,7 +55,7 @@ end
 ---@param client Client
 function Server:addClient(id, client)
     if self:client(id) then
-        self.log:push("error", ("%s already exists"):format(client), os.clock(), "server.Server.addClient")
+        self.log:push("error", ("%s already exists"):format(client), "server.Server.addClient")
     else
         self.clients[id] = client
     end
@@ -50,7 +68,7 @@ function Server:removeClient(id)
     if client then
         return client
     else
-        self.log:push("error", ("Client#%s doesn't exist"):format(id), os.clock(), "server.Server.removeClient")
+        self.log:push("error", ("Client#%s doesn't exist"):format(id), "server.Server.removeClient")
     end
 end
 
@@ -58,6 +76,7 @@ end
 ---@param id integer
 function Server:block(id)
     self.blockedIds[id] = true
+    self.log:push("info", ("Client#%s blocked"):format(id))
 end
 ---@param self Server
 ---@param id integer
@@ -66,7 +85,7 @@ function Server:blocked(id)
 end
 
 ---@param self Server
-function Server:run()
+function Server:listen()
     local name = "Server#"..tostring(os.getComputerID())
     rednet.host(NET_PROTOCOL, name)
     self.running = true
@@ -74,16 +93,74 @@ function Server:run()
         local id, msg = rednet.receive(NET_PROTOCOL, SERVER_TIMEOUT)
         if id then
             if not self:blocked(id) then
-                local handle = self.handleRequests[msg]
-                if handle then
-                    handle(self, id)
+                if type(msg) == "table" then
+                    if msg.head == "register" then
+                        local client = client.Client.new(id, transform.Transform.zero())
+                        self.log:push("info", ("%s is registered"):format(client), "server.Server.listen")
+                        self:addClient(id, client)
+                    elseif msg.head == "info" then
+                        local client = self:client(id)
+                        if client then
+                            msg = turtleInfo(msg, client)
+                            client.transform.position.x = msg.x
+                            client.transform.position.y = msg.y
+                            client.transform.position.z = msg.z
+                            client.transform.direction = msg.direction
+                            client.inventory = msg.inventory
+                            client.fuel = msg.fuel
+                        end
+                    elseif msg.head == "task" then
+                        local client = self:client(id)
+                        if client then
+                            rednet.send(id, table.remove(client.tasks), NET_PROTOCOL)
+                        else
+                            self.log:push("info", ("unregistered computer #%s is trying to request a task"), "server.Server.listen")
+                        end
+                    end
                 end
             end
         end
+        self = coroutine.yield(true)
     end
     rednet.unhost(NET_PROTOCOL, name)
 end
+---@param self Server
+function Server:eventListener()
+    term.clear()
+    term.setCursorPos(1, 1)
+    while true do
+        table.insert(self.events, { os.pullEvent() })
+    end
+end
+---@param self Server
+function Server:interface()
+    while true do
+        term.clear()
+        term.setCursorPos(1, 1)
+        for id, client in ipairs(self.clients) do
+            print(id, client:tostring())
+        end
+        local clientsSize = #self.clients
+        while #self.events == 0 and #self.clients == clientsSize do
+            coroutine.yield()
+            print "waiting" --- dont yeidl
+        end
+        -- handle changes
+    end
+end
+
+local function start()
+    local server = Server.new()
+    parallel.waitForAll(function()
+        server:listen()
+    end, function()
+        server:eventListener()
+    end, function()
+        server:interface()
+    end)
+end
 
 return {
-    Server = Server
+    Server = Server,
+    start = start
 }

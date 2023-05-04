@@ -61,6 +61,9 @@ function Position.new(x, y, z)
         Position.mt
     )
 end
+function Position.default()
+    return Position.new(0, 0, 0)
+end
 ---@alias Direction "north"|"south"|"east"|"west"
 
 local Transform = {
@@ -96,6 +99,9 @@ function Transform.new(position, direction)
         },
         Transform.mt
     )
+end
+function Transform.default()
+    return Transform.new(Position.default(), "north")
 end
 ---@param self Transform
 ---@return integer

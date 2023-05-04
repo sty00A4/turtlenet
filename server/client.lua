@@ -1,4 +1,4 @@
-local transform = require "transform"
+local transform = require "turtlenet.server.transform"
 
 local Client = {
     mt = {
@@ -22,6 +22,10 @@ function Client.new(id, transform)
         ---@class Client
         {
             id = id, transform = transform,
+            
+            tasks = {},
+            ---@type table<integer, table>
+            inventory = {}, fuel = 0,
 
             tostring = Client.mt.__tostring,
             eq = Client.mt.__eq

@@ -43,10 +43,9 @@ end
 ---@param self Log
 ---@param type MessageType
 ---@param text string
----@param date integer
 ---@param src string|nil
-function Log:push(type, text, date, src)
-    table.insert(self.log, Message.new(type, text, date, src))
+function Log:push(type, text, src)
+    table.insert(self.log, Message.new(type, text, os.clock(), src))
 end
 
 return {
