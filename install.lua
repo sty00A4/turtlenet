@@ -5,6 +5,15 @@ local function download(path, prefix)
     shell.run(("wget %s%s %s%s"):format(LINK, path, prefix, path))
 end
 download "client/init.lua"
+download "picolua/bytecode.lua"
+download "picolua/compiler.lua"
+download "picolua/init.lua"
+download "picolua/lexer.lua"
+download "picolua/location.lua"
+download "picolua/nodes.lua"
+download "picolua/parser.lua"
+download "picolua/program.lua"
+download "picolua/tokens.lua"
 download "server/client.lua"
 download "server/init.lua"
 download "server/log.lua"
