@@ -1,5 +1,5 @@
 local TokenKind
-local TokenKind = {
+TokenKind = {
     ---@class TokenKind
     ID = {},
     ---@class TokenKind
@@ -136,12 +136,104 @@ local TokenKind = {
             return TokenKind.ID, id
         end
         return handle()
+    end,
+    ---@param kind TokenKind
+    tostring = function (kind)
+        if kind == TokenKind.ID then
+            return "id"
+        elseif kind == TokenKind.Number then
+            return "number"
+        elseif kind == TokenKind.Boolean then
+            return "boolean"
+        elseif kind == TokenKind.String then
+            return "string"
+        elseif kind == TokenKind.Equal then
+            return "equal"
+        elseif kind == TokenKind.Call then
+            return "call"
+        elseif kind == TokenKind.Seprate then
+            return "seperate"
+        elseif kind == TokenKind.Expr then
+            return "expr"
+        elseif kind == TokenKind.Add then
+            return "add"
+        elseif kind == TokenKind.Sub then
+            return "sub"
+        elseif kind == TokenKind.Mul then
+            return "mul"
+        elseif kind == TokenKind.Div then
+            return "div"
+        elseif kind == TokenKind.Mod then
+            return "mod"
+        elseif kind == TokenKind.Pow then
+            return "pow"
+        elseif kind == TokenKind.EQ then
+            return "eq"
+        elseif kind == TokenKind.NE then
+            return "ne"
+        elseif kind == TokenKind.LT then
+            return "lt"
+        elseif kind == TokenKind.GT then
+            return "gt"
+        elseif kind == TokenKind.LE then
+            return "le"
+        elseif kind == TokenKind.GE then
+            return "ge"
+        elseif kind == TokenKind.And then
+            return "and"
+        elseif kind == TokenKind.Or then
+            return "or"
+        elseif kind == TokenKind.Not then
+            return "not"
+        elseif kind == TokenKind.BitAnd then
+            return "bit-and"
+        elseif kind == TokenKind.BitOr then
+            return "bit-or"
+        elseif kind == TokenKind.BitXor then
+            return "bit-xor"
+        elseif kind == TokenKind.BitNot then
+            return "bit-not"
+        elseif kind == TokenKind.BitLeft then
+            return "bit-left"
+        elseif kind == TokenKind.BitRight then
+            return "bit-right"
+        elseif kind == TokenKind.Do then
+            return "do"
+        elseif kind == TokenKind.Then then
+            return "then"
+        elseif kind == TokenKind.End then
+            return "end"
+        elseif kind == TokenKind.If then
+            return "if"
+        elseif kind == TokenKind.ElseIf then
+            return "elseif"
+        elseif kind == TokenKind.Else then
+            return "else"
+        elseif kind == TokenKind.For then
+            return "for"
+        elseif kind == TokenKind.While then
+            return "while"
+        elseif kind == TokenKind.Repeat then
+            return "repeat"
+        elseif kind == TokenKind.Wait then
+            return "wait"
+        end
     end
 }
 
 local Token = {
     mt = {
-        __name = "token"
+        __name = "token",
+        ---@param self Token
+        __tostring = function(self)
+            if type(self.value) == "nil" then
+                return ("[%s]"):format(TokenKind.tostring(self.kind))
+            elseif type(self.value) == "string" then
+                return ("[%s:%q]"):format(TokenKind.tostring(self.kind), self.value)
+            else
+                return ("[%s:%s]"):format(TokenKind.tostring(self.kind), self.value)
+            end
+        end
     }
 }
 ---@param kind TokenKind

@@ -19,7 +19,7 @@ function Lexer.new(file, text)
             idx = 1, col = 1, ln = 1,
             ---@alias Lines table<integer, table<integer, Token>>
             ---@type Lines
-            lines = {},
+            lines = {{}},
 
             advance = Lexer.advance, get = Lexer.get, pos = Lexer.pos,
             whiteSpace = Lexer.whiteSpace,
@@ -31,7 +31,8 @@ end
 
 ---@param self Lexer
 function Lexer:get()
-    return self.text:sub(self.idx, self.idx)
+    local c = self.text:sub(self.idx, self.idx)
+    if #c == 0 then return nil else return c end
 end
 ---@param self Lexer
 function Lexer:pos()
@@ -63,8 +64,13 @@ function Lexer:next()
     local pos = self:pos()
     self:advance()
     if c == "=" then
+        if self:get() == "=" then
+            pos:extend(self:pos())
+            self:advance()
+            return Token.new(TokenKind.EQ, nil, pos)
+        end
         return Token.new(TokenKind.Equal, nil, pos)
-    elseif c == "!" then
+    elseif c == ":" then
         return Token.new(TokenKind.Call, nil, pos)
     elseif c == "(" then
         return Token.new(TokenKind.Expr, false, pos)
@@ -82,13 +88,6 @@ function Lexer:next()
         return Token.new(TokenKind.Mod, nil, pos)
     elseif c == "^" then
         return Token.new(TokenKind.Pow, nil, pos)
-    elseif c == "=" then
-        if self:get() == "=" then
-            pos:extend(self:pos())
-            self:advance()
-            return Token.new(TokenKind.EQ, nil, pos)
-        end
-        return Token.new(TokenKind.Equal, nil, pos)
     elseif c == "~" then
         if self:get() == "=" then
             pos:extend(self:pos())
@@ -110,6 +109,18 @@ function Lexer:next()
             return Token.new(TokenKind.GE, nil, pos)
         end
         return Token.new(TokenKind.GT, nil, pos)
+    elseif c == "\"" or c == "'" then
+        local endChar = c
+        local str = ""
+        while true do
+            local c = self:get() if not c then break end
+            if c == endChar then break end
+            str = str .. c
+            pos:extend(self:pos())
+            self:advance()
+        end
+        self:advance()
+        return Token.new(TokenKind.String, str, pos)
     elseif c:match("%d") then
         local number = c
         while true do

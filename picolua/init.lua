@@ -16,5 +16,26 @@ return {
     parser = parser,
     bytecode = bytecode,
     compiler = compiler,
-    program = program
+    program = program,
+    run = function(path)
+        local file = io.open(path, "r") if not file then
+            return nil, ("path %q not found"):format(path)
+        end
+        local text = file:read("*a")
+        file:close()
+        local file = location.File.new(path)
+
+        local _tokens, err, epos = lexer.lex(file, text) if err then return nil, err, epos end
+        if not _tokens then return end
+        -- for ln, line in ipairs(_tokens) do
+        --     io.write(("%s: "):format(ln))
+        --     for _, token in ipairs(line) do
+        --         io.write(tostring(token), " ")
+        --     end
+        --     print()
+        -- end
+        local ast, err, epos = parser.parse(file, _tokens)if err then return nil, err, epos end
+        if not ast then return end
+        print(ast.type)
+    end
 }
