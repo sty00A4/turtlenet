@@ -157,6 +157,25 @@ end
 
 ---@alias EvalNode PathNode|NumberNode|BooleanNode|StringNode|BinaryNode|UnaryNode
 
+local BlockNode = {
+    mt = {
+        __name = "block-node"
+    }
+}
+---@param nodes table<integer, StatementNode>
+---@param pos Position
+---@return BlockNode
+function BlockNode.new(nodes, pos)
+    return setmetatable(
+        ---@class BlockNode
+        {
+            type = BlockNode.mt.__name,
+            nodes = nodes, pos = pos,
+        },
+        BlockNode.mt
+    )
+end
+
 local CallNode = {
     mt = {
         __name = "call-node"
@@ -196,11 +215,114 @@ function AssignNode.new(path, value, pos)
     )
 end
 
----@alias StatementNode CallNode|AssignNode|IfNode|RepeatNode|WhileNode|ForNode
+local IfNode = {
+    mt = {
+        __name = "if-node"
+    }
+}
+---@param conds table<integer, EvalNode>
+---@param cases table<integer, StatementNode>
+---@param elseCase StatementNode|nil
+---@param pos Position
+---@return IfNode
+function IfNode.new(conds, cases, elseCase, pos)
+    return setmetatable(
+        ---@class IfNode
+        {
+            type = IfNode.mt.__name,
+            conds = conds, cases = cases, elseCase = elseCase, pos = pos,
+        },
+        IfNode.mt
+    )
+end
+local WhileNode = {
+    mt = {
+        __name = "while-node"
+    }
+}
+---@param cond EvalNode
+---@param body StatementNode
+---@param pos Position
+---@return WhileNode
+function WhileNode.new(cond, body, pos)
+    return setmetatable(
+        ---@class WhileNode
+        {
+            type = WhileNode.mt.__name,
+            cond = cond, body = body, pos = pos,
+        },
+        WhileNode.mt
+    )
+end
+local ForNode = {
+    mt = {
+        __name = "for-node"
+    }
+}
+---@param ids table<integer, IDNode>
+---@param iter EvalNode
+---@param body StatementNode
+---@param pos Position
+---@return ForNode
+function ForNode.new(ids, iter, body, pos)
+    return setmetatable(
+        ---@class ForNode
+        {
+            type = ForNode.mt.__name,
+            ids = ids, iter = iter, body = body, pos = pos,
+        },
+        ForNode.mt
+    )
+end
+
+local RepeatNode = {
+    mt = {
+        __name = "repeat-node"
+    }
+}
+---@param count EvalNode
+---@param body StatementNode
+---@param pos Position
+---@return RepeatNode
+function RepeatNode.new(count, body, pos)
+    return setmetatable(
+        ---@class RepeatNode
+        {
+            type = RepeatNode.mt.__name,
+            count = count, body = body, pos = pos,
+        },
+        RepeatNode.mt
+    )
+end
+local WaitNode = {
+    mt = {
+        __name = "wait-node"
+    }
+}
+---@param cond EvalNode
+---@param body StatementNode
+---@param pos Position
+---@return WaitNode
+function WaitNode.new(cond, body, pos)
+    return setmetatable(
+        ---@class WaitNode
+        {
+            type = WaitNode.mt.__name,
+            cond = cond, body = body, pos = pos,
+        },
+        WaitNode.mt
+    )
+end
+
+
+---@alias StatementNode BlockNode|CallNode|AssignNode|IfNode|WhileNode|ForNode|RepeatNode|WaitNode
 
 return {
     IDNode = IDNode, FieldNode = FieldNode, IndexNode = IndexNode,
     NumberNode = NumberNode, BooleanNode = BooleanNode, StringNode = StringNode,
     BinaryNode = BinaryNode, UnaryNode = UnaryNode,
+    BlockNode = BlockNode,
     CallNode = CallNode, AssignNode = AssignNode,
+    IfNode = IfNode, WhileNode = WhileNode, ForNode = ForNode,
+    RepeatNode = RepeatNode, WaitNode = WaitNode
 }
