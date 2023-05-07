@@ -80,16 +80,16 @@ function Parser:statement()
     if token.kind == TokenKind.ID then
         local path, err, epos = self:path() if err then return nil, err, epos end
         if not path then return end
-        if self:token() then
-            if self:token().kind == TokenKind.Equal then
+        local token = self:token()
+        if token then
+            if token.kind == TokenKind.Equal then
                 self:advance()
                 local value, err, epos = self:expression() if err then return nil, err, epos end
                 if not value then return end
                 pos:extend(value.pos)
                 self:advanceLine()
                 return nodes.AssignNode.new(path, value, pos)
-            end
-            if self:token().kind == TokenKind.Call then
+            elseif token.kind == TokenKind.Call then
                 self:advance()
                 local args = {}
                 while self:token() do
@@ -100,12 +100,16 @@ function Parser:statement()
                 end
                 self:advanceLine()
                 return nodes.CallNode.new(path, args, pos)
+            else
+                return nil, ("unexpected %s"):format(TokenKind.tostring(token.kind)), token.pos
             end
         else
             pos:extend(path.pos)
             self:advanceLine()
             return nodes.CallNode.new(path, {}, pos)
         end
+    else
+        return nil, ("unexpected %s"):format(TokenKind.tostring(token.kind)), token.pos
     end
 end
 ---@param self Parser
@@ -116,6 +120,7 @@ function Parser:expression()
         return self:path()
     end
     local pos = token.pos
+    self:advance()
     if token.kind == TokenKind.Number then
         return nodes.NumberNode.new(token.value, pos)
     end
@@ -126,7 +131,6 @@ function Parser:expression()
         return nodes.StringNode.new(token.value, pos)
     end
     if token.kind == TokenKind.ExprIn then
-        self:advance()
         local token, err, epos = self:check() if err then return nil, err, epos end
         if not token then return end
         -- unary

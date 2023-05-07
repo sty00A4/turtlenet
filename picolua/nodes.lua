@@ -26,7 +26,7 @@ local FieldNode = {
         __name = "field-node",
         ---@param self FieldNode
         __tostring = function (self)
-            return ("%s.%s"):format(self.head, self.field)
+            return ("%s %s"):format(self.head, self.field)
         end
     }
 }
