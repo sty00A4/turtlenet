@@ -17,7 +17,9 @@ TokenKind = {
     Seprate = {},
     
     ---@class TokenKind
-    Expr = {}, -- value: boolean (true = '(', false = ')')
+    ExprIn = {},
+    ---@class TokenKind
+    ExprOut = {},
     ---@class TokenKind
     Add = {},
     ---@class TokenKind

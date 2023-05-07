@@ -1,68 +1,68 @@
-local Position
-local Position = {
+local Position3D
+local Position3D = {
     mt = {
-        __name = "position",
-        ---@param self Position
+        __name = "position3d",
+        ---@param self Position3D
         __tostring = function(self)
             return ("(%s, %s, %s)"):format(self.x, self.y, self.z)
         end,
-        ---@param self Position
-        ---@param other Position
+        ---@param self Position3D
+        ---@param other Position3D
         __eq = function(self, other)
             return self.x == other.x and self.y == other.y and self.z == other.z
         end,
-        ---@param self Position
-        ---@param other Position
-        ---@return Position
+        ---@param self Position3D
+        ---@param other Position3D
+        ---@return Position3D
         __add = function(self, other)
-            return Position.new(self.x + other.x, self.y + other.y, self.z + other.z)
+            return Position3D.new(self.x + other.x, self.y + other.y, self.z + other.z)
         end,
-        ---@param self Position
-        ---@param other Position
-        ---@return Position
+        ---@param self Position3D
+        ---@param other Position3D
+        ---@return Position3D
         __sub = function(self, other)
-            return Position.new(self.x - other.x, self.y - other.y, self.z - other.z)
+            return Position3D.new(self.x - other.x, self.y - other.y, self.z - other.z)
         end,
-        ---@param self Position
-        ---@param other Position
-        ---@return Position
+        ---@param self Position3D
+        ---@param other Position3D
+        ---@return Position3D
         __mul = function(self, other)
-            return Position.new(self.x * other.x, self.y * other.y, self.z * other.z)
+            return Position3D.new(self.x * other.x, self.y * other.y, self.z * other.z)
         end,
-        ---@param self Position
-        ---@param other Position
-        ---@return Position
+        ---@param self Position3D
+        ---@param other Position3D
+        ---@return Position3D
         __div = function(self, other)
-            return Position.new(self.x / other.x, self.y / other.y, self.z / other.z)
+            return Position3D.new(self.x / other.x, self.y / other.y, self.z / other.z)
         end,
-        ---@param self Position
-        ---@param other Position
-        ---@return Position
+        ---@param self Position3D
+        ---@param other Position3D
+        ---@return Position3D
         __mod = function(self, other)
-            return Position.new(self.x % other.x, self.y % other.y, self.z % other.z)
+            return Position3D.new(self.x % other.x, self.y % other.y, self.z % other.z)
         end,
     }
 }
 ---@param x integer
 ---@param y integer
 ---@param z integer
----@return Position
-function Position.new(x, y, z)
+---@return Position3D
+function Position3D.new(x, y, z)
     return setmetatable(
-        ---@class Position
+        ---@class Position3D
         {
             x = x, y = y, z = z,
 
-            tostring = Position.mt.__tostring,
-            eq = Position.mt.__eq,
-            add = Position.mt.__add, sub = Position.mt.__sub,
-            mul = Position.mt.__mul, div = Position.mt.__div, mod = Position.mt.__mod,
+            tostring = Position3D.mt.__tostring,
+            eq = Position3D.mt.__eq,
+            add = Position3D.mt.__add, sub = Position3D.mt.__sub,
+            mul = Position3D.mt.__mul, div = Position3D.mt.__div, mod = Position3D.mt.__mod,
         },
-        Position.mt
+        Position3D.mt
     )
 end
-function Position.default()
-    return Position.new(0, 0, 0)
+function Position3D.default()
+    return Position3D.new(0, 0, 0)
 end
 ---@alias Direction "north"|"south"|"east"|"west"
 
@@ -80,7 +80,7 @@ local Transform = {
         end
     }
 }
----@param position Position
+---@param position Position3D
 ---@param direction Direction
 ---@return Transform
 function Transform.new(position, direction)
@@ -101,7 +101,7 @@ function Transform.new(position, direction)
     )
 end
 function Transform.default()
-    return Transform.new(Position.default(), "north")
+    return Transform.new(Position3D.default(), "north")
 end
 ---@param self Transform
 ---@return integer
@@ -170,5 +170,5 @@ end
 
 return {
     Transform = Transform,
-    Position = Position
+    Position3D = Position3D
 }

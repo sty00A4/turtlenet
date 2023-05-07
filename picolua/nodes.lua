@@ -1,6 +1,10 @@
 local IDNode = {
     mt = {
-        __name = "id-node"
+        __name = "id-node",
+        ---@param self IDNode
+        __tostring = function (self)
+            return self.id
+        end
     }
 }
 ---@param id string
@@ -19,7 +23,11 @@ end
 
 local FieldNode = {
     mt = {
-        __name = "field-node"
+        __name = "field-node",
+        ---@param self FieldNode
+        __tostring = function (self)
+            return ("%s.%s"):format(self.head, self.field)
+        end
     }
 }
 ---@param head PathNode
@@ -38,7 +46,11 @@ function FieldNode.new(head, field, pos)
 end
 local IndexNode = {
     mt = {
-        __name = "index-node"
+        __name = "index-node",
+        ---@param self IndexNode
+        __tostring = function (self)
+            return ("%s[%s]"):format(self.head, self.index)
+        end
     }
 }
 ---@param head PathNode
@@ -60,7 +72,11 @@ end
 
 local NumberNode = {
     mt = {
-        __name = "number-node"
+        __name = "number-node",
+        ---@param self NumberNode
+        __tostring = function (self)
+            return tostring(self.value)
+        end
     }
 }
 ---@param value number
@@ -78,7 +94,11 @@ function NumberNode.new(value, pos)
 end
 local BooleanNode = {
     mt = {
-        __name = "boolean-node"
+        __name = "boolean-node",
+        ---@param self BooleanNode
+        __tostring = function (self)
+            return tostring(self.value)
+        end
     }
 }
 ---@param value boolean
@@ -96,7 +116,11 @@ function BooleanNode.new(value, pos)
 end
 local StringNode = {
     mt = {
-        __name = "string-node"
+        __name = "string-node",
+        ---@param self StringNode
+        __tostring = function (self)
+            return ("%q"):format(self.value)
+        end
     }
 }
 ---@param value string
@@ -113,10 +137,14 @@ function StringNode.new(value, pos)
     )
 end
 
----@alias BinaryOperator "+"|"-"|"*"|"/"|"%"|"^"
+---@alias BinaryOperator "+"|"-"|"*"|"/"|"%"|"^"|"=="|"~="|"<"|">"|"<="|">="|"and"|"or"
 local BinaryNode = {
     mt = {
-        __name = "binary-node"
+        __name = "binary-node",
+        ---@param self BinaryNode
+        __tostring = function (self)
+            return ("(%s %s %s)"):format(self.left, self.op, self.right)
+        end
     }
 }
 ---@param op BinaryOperator
@@ -134,10 +162,14 @@ function BinaryNode.new(op, left, right, pos)
         BinaryNode.mt
     )
 end
----@alias UnaryOperator "+"|"-"|"*"|"/"|"%"|"^"
+---@alias UnaryOperator "-"|"not"
 local UnaryNode = {
     mt = {
-        __name = "unary-node"
+        __name = "unary-node",
+        ---@param self UnaryNode
+        __tostring = function (self)
+            return ("(%s %s)"):format(self.op, self.right)
+        end
     }
 }
 ---@param op UnaryOperator
@@ -159,7 +191,15 @@ end
 
 local BlockNode = {
     mt = {
-        __name = "block-node"
+        __name = "block-node",
+        ---@param self BlockNode
+        __tostring = function (self)
+            local s = "\n"
+            for _, n in ipairs(self.nodes) do
+                s = s .. tostring(n) .. "\n"
+            end
+            return s
+        end
     }
 }
 ---@param nodes table<integer, StatementNode>
@@ -178,7 +218,15 @@ end
 
 local CallNode = {
     mt = {
-        __name = "call-node"
+        __name = "call-node",
+        ---@param self CallNode
+        __tostring = function (self)
+            local args = ""
+            for _, arg in ipairs(self.args) do
+                args = args .. tostring(arg) .. " "
+            end
+            return ("%s: %s"):format(self.head, args)
+        end
     }
 }
 ---@param head PathNode
@@ -197,7 +245,11 @@ function CallNode.new(head, args, pos)
 end
 local AssignNode = {
     mt = {
-        __name = "assign-node"
+        __name = "assign-node",
+        ---@param self AssignNode
+        __tostring = function (self)
+            return ("%s = %s"):format(self.path, self.value)
+        end
     }
 }
 ---@param path table<integer, PathNode>
@@ -217,7 +269,19 @@ end
 
 local IfNode = {
     mt = {
-        __name = "if-node"
+        __name = "if-node",
+        ---@param self IfNode
+        __tostring = function (self)
+            local s = "if"
+            for i = 1, #self.conds do
+                s = s .. tostring(self.conds[i]) .. " then " .. tostring(self.cases[i])
+                if i ~= #self.conds then
+                    s = s .. " elseif "
+                end
+            end
+            s = s .. "end"
+            return s
+        end
     }
 }
 ---@param conds table<integer, EvalNode>
@@ -317,6 +381,32 @@ end
 
 ---@alias StatementNode BlockNode|CallNode|AssignNode|IfNode|WhileNode|ForNode|RepeatNode|WaitNode
 
+local ChunkNode = {
+    mt = {
+        __name = "chunk-node",
+        ---@param self ChunkNode
+        __tostring = function (self)
+            local s = ""
+            for _, n in ipairs(self.nodes) do
+                s = s .. tostring(n) .. "\n"
+            end
+            return s
+        end
+    }
+}
+---@param nodes table<integer, StatementNode>
+---@return ChunkNode
+function ChunkNode.new(nodes)
+    return setmetatable(
+        ---@class ChunkNode
+        {
+            type = ChunkNode.mt.__name,
+            nodes = nodes,
+        },
+        ChunkNode.mt
+    )
+end
+
 return {
     IDNode = IDNode, FieldNode = FieldNode, IndexNode = IndexNode,
     NumberNode = NumberNode, BooleanNode = BooleanNode, StringNode = StringNode,
@@ -324,5 +414,6 @@ return {
     BlockNode = BlockNode,
     CallNode = CallNode, AssignNode = AssignNode,
     IfNode = IfNode, WhileNode = WhileNode, ForNode = ForNode,
-    RepeatNode = RepeatNode, WaitNode = WaitNode
+    RepeatNode = RepeatNode, WaitNode = WaitNode,
+    ChunkNode = ChunkNode
 }

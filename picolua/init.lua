@@ -36,6 +36,6 @@ return {
         -- end
         local ast, err, epos = parser.parse(file, _tokens)if err then return nil, err, epos end
         if not ast then return end
-        print(ast.type)
+        print(ast)
     end
 }

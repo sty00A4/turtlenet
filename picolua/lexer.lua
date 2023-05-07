@@ -73,9 +73,9 @@ function Lexer:next()
     elseif c == ":" then
         return Token.new(TokenKind.Call, nil, pos)
     elseif c == "(" then
-        return Token.new(TokenKind.Expr, false, pos)
+        return Token.new(TokenKind.ExprIn, nil, pos)
     elseif c == ")" then
-        return Token.new(TokenKind.Expr, true, pos)
+        return Token.new(TokenKind.ExprOut, nil, pos)
     elseif c == "+" then
         return Token.new(TokenKind.Add, nil, pos)
     elseif c == "-" then

@@ -34,7 +34,7 @@ function Position.new(file, lnStart, lnStop, colStart, colStop)
             ln = { start = lnStart, stop = lnStop },
             col = { start = colStart, stop = colStop },
 
-            extend = Position.extend,
+            extend = Position.extend, clone = Position.clone,
         },
         Position.mt
     )
@@ -45,6 +45,10 @@ end
 function Position:extend(other)
     self.ln.stop = other.ln.stop
     self.col.stop = other.col.stop
+end
+---@param self Position
+function Position:clone()
+    return Position.new(self.file, self.ln.start, self.ln.stop, self.col.start, self.col.stop)
 end
 
 return {
