@@ -272,12 +272,15 @@ local IfNode = {
         __name = "if-node",
         ---@param self IfNode
         __tostring = function (self)
-            local s = "if"
+            local s = "if "
             for i = 1, #self.conds do
                 s = s .. tostring(self.conds[i]) .. " then " .. tostring(self.cases[i])
                 if i ~= #self.conds then
-                    s = s .. " elseif "
+                    s = s .. "elseif "
                 end
+            end
+            if self.elseCase then
+                s = s .. "else " .. tostring(self.elseCase)
             end
             s = s .. "end"
             return s
