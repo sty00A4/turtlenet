@@ -304,7 +304,11 @@ function IfNode.new(conds, cases, elseCase, pos)
 end
 local WhileNode = {
     mt = {
-        __name = "while-node"
+        __name = "while-node",
+        ---@param self WhileNode
+        __tostring = function (self)
+            return ("while %s do %send"):format(self.cond, self.body)
+        end
     }
 }
 ---@param cond EvalNode

@@ -19,7 +19,7 @@ function Parser.new(file, tokens)
             ln = 1, col = 1,
 
             token = Parser.token, advance = Parser.advance, advanceLine = Parser.advanceLine,
-            check = Parser.check, expect = Parser.expect, skip = Parser.skip,
+            check = Parser.check, expect = Parser.expect, skip = Parser.skip, endOfLine = Parser.endOfLine,
 
             chunk = Parser.chunk, block = Parser.block,
             statement = Parser.statement, expression = Parser.expression,
@@ -69,6 +69,15 @@ function Parser:skip(kind)
         self:advance()
     end
 end
+---@param self Parser
+function Parser:endOfLine()
+    local token = self:token() if not token then return end
+    if token then
+        return nil, ("unexpected %s"):format(TokenKind.tostring(token.kind))
+    else
+        self:advanceLine()
+    end
+end
 
 ---@param self Parser
 function Parser:chunk()
@@ -77,7 +86,7 @@ function Parser:chunk()
     while self:token() do
         local node, err, epos = self:statement() if err then return nil, err, epos end
         if not node then break end
-        self:advanceLine()
+        local err, epos = self:endOfLine() if err then return nil, err, epos end
         while not self:token() and self.ln <= #self.tokens do self:advanceLine() end
         table.insert(chunk, node)
     end
@@ -96,7 +105,7 @@ function Parser:block(endTokens)
         local node, err, epos = self:statement() if err then return nil, err, epos end
         if not node then break end
         pos:extend(node.pos)
-        self:advanceLine()
+        local err, epos = self:endOfLine() if err then return nil, err, epos end
         while not self:token() and self.ln <= #self.tokens do self:advanceLine() end
         table.insert(block, node)
         local token, err = self:check() if err then return nil, err end
@@ -185,6 +194,27 @@ function Parser:statement(endTokens)
             end
         end
         return nodes.IfNode.new(conds, cases, else_case, pos)
+    elseif token.kind == TokenKind.While then
+        self:advance()
+        local cond, err, epos = self:expression() if err then return nil, err, epos end
+        if not cond then return nil, ("expected expression, got %s"):format(self:token() and TokenKind.tostring(self:token().kind) or "end of input") end
+        self:expect(TokenKind.Do)
+        local body, err, epos = self:statement() if err then return nil, err, epos end
+        if not body then return nil, ("expected statement, got %s"):format(self:token() and TokenKind.tostring(self:token().kind) or "end of input") end
+        pos:extend(body.pos)
+        local token = self:token()
+        if token then
+            pos:extend(token.pos)
+            if token.kind == TokenKind.End then self:advanceLine() end
+        else
+            self:advanceLine()
+            local token = self:token()
+            if token then
+                pos:extend(token.pos)
+                if token.kind == TokenKind.End then self:advanceLine() end
+            end
+        end
+        return nodes.WhileNode.new(cond, body, pos)
     else
         return nil, ("unexpected %s"):format(TokenKind.tostring(token.kind)), token.pos
     end
