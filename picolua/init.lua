@@ -1,3 +1,12 @@
+function table.contains(t, item)
+    for k, v in pairs(t) do
+        if v == item then
+            return true
+        end
+    end
+    return false
+end
+
 local location = require "turtlenet.picolua.location"
 local tokens = require "turtlenet.picolua.tokens"
 local lexer = require "turtlenet.picolua.lexer"

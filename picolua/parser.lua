@@ -46,7 +46,7 @@ end
 ---@param self Parser
 function Parser:check()
     local token = self:token() if not token then
-        return nil, ("unexpected end of input")
+        return nil, ("unexpected end of line")
     end
     return token
 end
@@ -73,18 +73,42 @@ end
 ---@param self Parser
 function Parser:chunk()
     local chunk = {}
+    while not self:token() and self.ln <= #self.tokens do self:advanceLine() end
     while self:token() do
         local node, err, epos = self:statement() if err then return nil, err, epos end
         if not node then break end
         self:advanceLine()
+        while not self:token() and self.ln <= #self.tokens do self:advanceLine() end
         table.insert(chunk, node)
     end
     return nodes.ChunkNode.new(chunk)
 end
 ---@param self Parser
+---@param endTokens table<integer, TokenKind>
+function Parser:block(endTokens)
+    local block = {}
+    while not self:token() and self.ln <= #self.tokens do self:advanceLine() end
+    local token, err = self:check() if err then return nil, err end
+    if not token then return end
+    local pos = token.pos:clone()
+    while true do
+        if table.contains(endTokens, token) then break end
+        local node, err, epos = self:statement() if err then return nil, err, epos end
+        if not node then break end
+        pos:extend(node.pos)
+        self:advanceLine()
+        while not self:token() and self.ln <= #self.tokens do self:advanceLine() end
+        table.insert(block, node)
+        local token, err = self:check() if err then return nil, err end
+        if not token then break end
+        if table.contains(endTokens, token.kind) then break end
+    end
+    return nodes.BlockNode.new(block, pos)
+end
+---@param self Parser
 ---@param endTokens table<integer, TokenKind>|nil
 function Parser:statement(endTokens)
-    local token, err, epos = self:check() if err then return nil, err, epos end
+    local token = self:token()
     if not token then
         if not endTokens then endTokens = { TokenKind.End } end
         return self:block(endTokens)
