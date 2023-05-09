@@ -162,7 +162,7 @@ function BinaryNode.new(op, left, right, pos)
         BinaryNode.mt
     )
 end
----@alias UnaryOperator "-"|"not"
+---@alias UnaryOperator "-"|"not"|"#"
 local UnaryNode = {
     mt = {
         __name = "unary-node",

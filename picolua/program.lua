@@ -81,7 +81,7 @@ function Program:pop()
 end
 ---@param self Program
 function Program:popSafe()
-    return table.remove(self.stack)
+    return (table.remove(self.stack) or {}).value
 end
 ---@param self Program
 function Program:const(addr)
@@ -185,7 +185,7 @@ function Program:run()
                 return nil, fromLuaError(returns), Position.new(self.file, ln, ln, col, col)
             end
             if instr == ByteCode.CallReturn then
-                for _, value in ipairs(returns) do
+                for k, value in ipairs(returns) do
                     self:push(value)
                 end
             end
@@ -334,6 +334,14 @@ function Program:run()
             local right = self:pop()
             local success, value = pcall(function()
                 return not right
+            end)
+            if not success then return nil, attemptUnaryError(instr, type(right)), Position.new(self.file, ln, ln, col, col) end
+            self:push(value)
+            self.ip = self.ip + INSTRUCTION_SIZE
+        elseif instr == ByteCode.Len then
+            local right = self:pop()
+            local success, value = pcall(function()
+                return #right
             end)
             if not success then return nil, attemptUnaryError(instr, type(right)), Position.new(self.file, ln, ln, col, col) end
             self:push(value)

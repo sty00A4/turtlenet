@@ -52,6 +52,8 @@ local ByteCode = {
     Or = 0x4d,
     Neg = 0x4e,
     Not = 0x4f,
+    Len = 0x50,
+    
     Copy = 0x60,
     Swap = 0x61,
 }

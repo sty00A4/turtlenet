@@ -230,6 +230,7 @@ function Compiler:expression(expression)
         local unaryByteCode = {
             ["-"] = ByteCode.Neg,
             ["not"] = ByteCode.Not,
+            ["#"] = ByteCode.Len,
         }
         writeCode(self.code, expression.pos.ln.start, expression.pos.col.start, unaryByteCode[op])
     elseif expression.type == "call-expr-node" then

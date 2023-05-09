@@ -297,13 +297,18 @@ function Parser:expression()
             if not right then return end
             pos:extend(right.pos)
             return nodes.UnaryNode.new("-", right, pos)
-        end
-        if token.kind == TokenKind.Not then
+        elseif token.kind == TokenKind.Not then
             self:advance()
             local right, err, epos = self:expression() if err then return nil, err, epos end
             if not right then return end
             pos:extend(right.pos)
             return nodes.UnaryNode.new("not", right, pos)
+        elseif token.kind == TokenKind.Len then
+            self:advance()
+            local right, err, epos = self:expression() if err then return nil, err, epos end
+            if not right then return end
+            pos:extend(right.pos)
+            return nodes.UnaryNode.new("#", right, pos)
         end
         -- binary
         local left, err, epos = self:expression() if err then return nil, err, epos end

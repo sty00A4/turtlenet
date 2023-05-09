@@ -109,6 +109,8 @@ function Lexer:next()
             return Token.new(TokenKind.GE, nil, pos)
         end
         return Token.new(TokenKind.GT, nil, pos)
+    elseif c == "#" then
+        return Token.new(TokenKind.Len, nil, pos)
     elseif c == "\"" or c == "'" then
         local endChar = c
         local str = ""

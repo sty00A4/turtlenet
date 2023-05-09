@@ -51,6 +51,8 @@ TokenKind = {
     ---@class TokenKind
     Not = {},
     ---@class TokenKind
+    Len = {},
+    ---@class TokenKind
     BitNot = {},
     ---@class TokenKind
     BitAnd = {},
@@ -187,6 +189,8 @@ TokenKind = {
             return "or"
         elseif kind == TokenKind.Not then
             return "not"
+        elseif kind == TokenKind.Len then
+            return "len"
         elseif kind == TokenKind.BitAnd then
             return "bit-and"
         elseif kind == TokenKind.BitOr then
@@ -219,6 +223,8 @@ TokenKind = {
             return "repeat"
         elseif kind == TokenKind.Wait then
             return "wait"
+        else
+            return "?"
         end
     end
 }
