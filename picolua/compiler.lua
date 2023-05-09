@@ -5,9 +5,11 @@ local ByteCode = bytecode.ByteCode
 
 ---@param code Code
 ---@param bytecode ByteCode
----@param addr integer
----@param count integer
+---@param addr integer|nil
+---@param count integer|nil
 local function writeCode(code, bytecode, addr, count)
+    addr = addr or 0
+    count = count or 1
     table.insert(code, bytecode)
     table.insert(code, addr)
     table.insert(code, count)
@@ -62,6 +64,7 @@ function Compiler:chunk(chunk)
     for _, statement in ipairs(chunk.nodes) do
         local _, err, epos = self:statement(statement) if err then return nil, err, epos end
     end
+    writeCode(self.code, ByteCode.Halt)
 end
 ---@param self Compiler
 ---@param statement StatementNode
@@ -70,10 +73,14 @@ function Compiler:statement(statement)
         local paths, values = statement.paths, statement.values
         for i = 1, #paths do
             local path, value = paths[i], values[i]
-            local typ, err, epos = self:expression(value) if err then return nil, err, epos end
+            if value then
+                local typ, err, epos = self:expression(value) if err then return nil, err, epos end
+            else
+                writeCode(self.code, ByteCode.Nil)
+            end
             if path.type == "id-node" then
                 local addr = self:newConst(path.id)
-                writeCode(self.code, ByteCode.Set, addr, 0)
+                writeCode(self.code, ByteCode.Set, addr)
             else
                 return nil, "field assignment not supported yet", path.pos
             end
@@ -97,15 +104,15 @@ function Compiler:expression(expression)
         ---@type number
         ---@diagnostic disable-next-line: assign-type-mismatch
         local value = expression.value
-        writeCode(self.code, ByteCode.Number, value, 0)
+        writeCode(self.code, ByteCode.Number, value)
     elseif expression.type == "boolean-node" then
         ---@type boolean
         ---@diagnostic disable-next-line: assign-type-mismatch
         local value = expression.value
-        writeCode(self.code, ByteCode.Boolean, value and 1 or 0, 0)
+        writeCode(self.code, ByteCode.Boolean, value and 1 or 0)
     elseif expression.type == "string-node" then
         local addr = self:newConst(expression.value)
-        writeCode(self.code, ByteCode.String, addr, 0)
+        writeCode(self.code, ByteCode.String, addr)
     elseif expression.type == "binary-node" then
         ---@type BinaryOperator
         ---@diagnostic disable-next-line: assign-type-mismatch
@@ -129,7 +136,7 @@ function Compiler:expression(expression)
             ["and"] = ByteCode.And,
             ["or"] = ByteCode.Or,
         }
-        writeCode(self.code, binaryByteCode[op], 0, 1)
+        writeCode(self.code, binaryByteCode[op])
     elseif expression.type == "unary-node" then
         ---@type UnaryOperator
         ---@diagnostic disable-next-line: assign-type-mismatch
@@ -140,7 +147,7 @@ function Compiler:expression(expression)
             ["-"] = ByteCode.Neg,
             ["not"] = ByteCode.Not,
         }
-        writeCode(self.code, unaryByteCode[op], 0, 1)
+        writeCode(self.code, unaryByteCode[op])
     end
 end
 ---@param self Compiler
@@ -149,17 +156,17 @@ function Compiler:path(path)
     if path.type == "id-node" then
         local id = path.id
         local addr = self:newConst(id)
-        writeCode(self.code, ByteCode.Get, addr, 0)
+        writeCode(self.code, ByteCode.Get, addr)
     elseif path.type == "field-node" then
         local head, field = path.head, path.field
         local _, err, epos = self:path(head) if err then return nil, err, epos end
         local addr = self:newConst(field)
-        writeCode(self.code, ByteCode.Field, addr, 0)
+        writeCode(self.code, ByteCode.Field, addr)
     elseif path.type == "index-node" then
         local head, index = path.head, path.field
         local _, err, epos = self:path(head) if err then return nil, err, epos end
         local typ, err, epos = self:expression(index) if err then return nil, err, epos end
-        writeCode(self.code, ByteCode.Index, 0, 0)
+        writeCode(self.code, ByteCode.Index)
     end
 end
 

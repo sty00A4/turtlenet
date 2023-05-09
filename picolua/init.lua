@@ -45,10 +45,10 @@ return {
         -- end
         local ast, err, epos = parser.parse(file, _tokens) if err then return nil, err, epos end
         if not ast then return end
-        print(ast)
-        local compiler, err, epos = compiler.compile(file, ast)if err then return nil, err, epos end
+        -- print(ast)
+        local compiler, err, epos = compiler.compile(file, ast) if err then return nil, err, epos end
         if not compiler then return end
-        print(bytecode.ByteCode.displayCode(compiler.code))
-        return program.run(file, compiler)
+        -- print(bytecode.ByteCode.displayCode(compiler.code))
+        program.run(file, compiler)
     end
 }

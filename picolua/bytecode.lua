@@ -12,7 +12,7 @@ local ByteCode = {
     Jump = 0x02, -- addr
     JumpIf = 0x03, -- addr
     JumpIfNot = 0x04, -- addr
-    Return = 0x05, -- value?
+    Return = 0x05,
 
     Get = 0x10, -- constAddr
     Set = 0x11,

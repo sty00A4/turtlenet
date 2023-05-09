@@ -18,7 +18,7 @@ elseif args[1] == "picolua" then
     local value, err, epos = turtlenet.picolua.run(path) if err then
         print(err) return
     end
-    print(value)
+    if type(value) ~= "nil" then print(value) end
 elseif args[1] == nil then
     print "USAGE:"
     print "  turt server - starts as a server"
