@@ -103,7 +103,6 @@ function Program:run()
     while self.ip <= #self.code do
         local instr, addr, count, ln, col = self.code[self.ip], self.code[self.ip + INSTRUCTION_ADDR_OFFSET], self.code[self.ip + INSTRUCTION_COUNT_OFFSET],
         self.code[self.ip + INSTRUCTION_LN_OFFSET], self.code[self.ip + INSTRUCTION_COL_OFFSET]
-        
         if instr == ByteCode.Halt then
             break
         elseif instr == ByteCode.Jump then
@@ -139,12 +138,34 @@ function Program:run()
                 _G[key] = self:pop()
             end
             self.ip = self.ip + INSTRUCTION_SIZE
+        elseif instr == ByteCode.Field then
+            local field = self:const(addr)
+            local head = self:pop()
+            if type(head) ~= "table" then
+                return nil, ("attempt to index into a %s"):format(type(head)), Position.new(self.file, ln, ln, col, col)
+            end
+            self:push(head[field])
+            self.ip = self.ip + INSTRUCTION_SIZE
+        elseif instr == ByteCode.Index then
+            local index = self:const(addr)
+            local head = self:pop()
+            if type(head) ~= "table" then
+                return nil, ("attempt to index into a %s"):format(type(head)), Position.new(self.file, ln, ln, col, col)
+            end
+            if type(index) ~= "number" or type(index) ~= "string" then
+                return nil, ("attempt to index with a %s"):format(type(index)), Position.new(self.file, ln, ln, col, col)
+            end
+            self:push(head[index])
+            self.ip = self.ip + INSTRUCTION_SIZE
         --- todo: Field and Index
         elseif instr == ByteCode.Call or instr == ByteCode.CallReturn then
             local func = self:pop()
+            if type(func) ~= "function" then
+                return nil, ("attempt to call a %s"):format(type(func)), Position.new(self.file, ln, ln, col, col)
+            end
             local args = {}
-            for _ = 1, count do
-                table.insert(args, self:pop())
+            for i = count, 1, -1 do
+                args[i] = self:pop()
             end
             local returns = { func(table.unpack(args)) }
             if instr == ByteCode.CallReturn then
@@ -303,6 +324,8 @@ function Program:run()
             self:push(b)
             self:push(a)
             self.ip = self.ip + INSTRUCTION_SIZE
+        else
+            error(("todo: %s"):format(ByteCode.tostring(instr, addr, count)))
         end
     end
 end

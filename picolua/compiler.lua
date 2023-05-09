@@ -258,7 +258,7 @@ function Compiler:path(path)
     elseif path.type == "field-node" then
         local head, field = path.head, path.field
         local _, err, epos = self:path(head) if err then return nil, err, epos end
-        local addr = self:newConst(field)
+        local addr = self:newConst(field.id)
         writeCode(self.code, path.pos.ln.start, path.pos.col.start, ByteCode.Field, addr)
     elseif path.type == "index-node" then
         local head, index = path.head, path.field
@@ -275,7 +275,7 @@ Compiler.optimisations = {
         while ip <= #self.code do
             local instr1, addr1, count1 = self.code[ip], self.code[ip + INSTRUCTION_ADDR_OFFSET], self.code[ip + INSTRUCTION_COUNT_OFFSET]
             ip = ip + INSTRUCTION_SIZE
-            if instr1 ~= ByteCode.Call and instr1 ~= ByteCode.CreateTable then
+            if instr1 ~= ByteCode.Call and instr1 ~= ByteCode.CreateTable and instr1 >= ByteCode.Add and instr1 <= ByteCode.Swap then
                 local instr2, addr2, count2 = self.code[ip], self.code[ip + INSTRUCTION_ADDR_OFFSET], self.code[ip + INSTRUCTION_COUNT_OFFSET]
                 if instr1 == instr2 and addr1 == addr2 then
                     local newCount = count1 + count2

@@ -215,7 +215,7 @@ function Parser:statement(endTokens)
             pos:extend(token.pos)
             if token.kind == TokenKind.Else then
                 self:advance()
-                local err
+                local err, epos
                 else_case, err, epos = self:statement() if err then return nil, err, epos end
             end
         end
@@ -340,7 +340,7 @@ function Parser:expression()
         elseif token.kind == TokenKind.Or then
             op = "or"
         else
-            return nil, ("unexpected binary operator %s"):format(TokenKind.tostring(token.kind))
+            return nil, ("unexpected binary operator: %s"):format(TokenKind.tostring(token.kind)), token.pos
         end
         self:advance()
         local right, err, epos = self:expression() if err then return nil, err, epos end
