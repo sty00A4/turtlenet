@@ -182,12 +182,29 @@ Compiler.optimisations = {
                 if instr1 == instr2 and addr1 == addr2 then
                     local newCount = count1 + count2
                     while instr1 == instr2 and addr1 == addr2 do
-                        table.remove(self.code, ip) table.remove(self.code, ip) table.remove(self.code, ip)
+                        table.remove(self.code, ip) table.remove(self.code, ip) table.remove(self.code, ip) -- remove instruction
                         instr2, addr2, count2 = self.code[ip], self.code[ip + 1], self.code[ip + 2]
                         newCount = newCount + count2
                     end
                     ip = ip - 3
                     self.code[ip], self.code[ip + 1], self.code[ip + 2] = instr1, addr1, newCount
+                    ip = ip + 3
+                end
+            end
+        end
+    end,
+    ---@param self Compiler
+    jumpNegation = function (self)
+        local ip = 1
+        while ip <= #self.code do
+            local instr1, _, count1 = self.code[ip], self.code[ip + 1], self.code[ip + 2]
+            ip = ip + 3
+            if instr1 == ByteCode.Not and count1 == 1 then
+                local instr2, addr = self.code[ip], self.code[ip + 1]
+                if instr2 == ByteCode.JumpIfNot then
+                    ip = ip - 3
+                    table.remove(self.code, ip) table.remove(self.code, ip) table.remove(self.code, ip)
+                    self.code[ip], self.code[ip + 1], self.code[ip + 2] = ByteCode.JumpIf, addr, 0
                     ip = ip + 3
                 end
             end
