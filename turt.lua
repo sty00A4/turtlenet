@@ -19,10 +19,25 @@ elseif args[1] == "picolua" then
         print "expected path after \"picolua\""
         return
     end
-    local value, err, epos = turtlenet.picolua.run(path) if err then
-        print(err) return
+    local targetPath = args[3]
+    if targetPath then
+        local compiler, err, epos = turtlenet.picolua.compile(path) if err then
+            print(err) return
+        end
+        if not compiler then return end
+        local file = io.open(targetPath, "wb")
+        if not file then
+            print(("cannot open target path %q"):format(targetPath)) return
+        end
+        file:write(string.char(table.unpack(compiler.code)))
+        file:close()
+        print(("successfully compiled %q to %q!"):format(path, targetPath))
+    else
+        local value, err, epos = turtlenet.picolua.run(path) if err then
+            print(err) return
+        end
+        if type(value) ~= "nil" then print(value) end
     end
-    if type(value) ~= "nil" then print(value) end
 elseif args[1] == nil then
     print "USAGE:"
     print "  turt server - starts as a server"
