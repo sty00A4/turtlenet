@@ -113,7 +113,9 @@ function Program:run()
     while self.ip <= #self.code do
         local instr, addr, count, ln, col = self.code[self.ip], self.code[self.ip + INSTRUCTION_ADDR_OFFSET], self.code[self.ip + INSTRUCTION_COUNT_OFFSET],
         self.code[self.ip + INSTRUCTION_LN_OFFSET], self.code[self.ip + INSTRUCTION_COL_OFFSET]
-        if instr == ByteCode.Halt then
+        if instr == ByteCode.None then
+            self.ip = self.ip + INSTRUCTION_SIZE
+        elseif instr == ByteCode.Halt then
             break
         elseif instr == ByteCode.Jump then
             self.ip = addr
