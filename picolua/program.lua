@@ -3,14 +3,15 @@ local Program = {
         __name = "program"
     }
 }
----@param code Code
+---@param file File
 ---@param compiler Compiler
 ---@return Program
-function Program.new(code, compiler)
+function Program.new(file, compiler)
     return setmetatable(
         ---@class Program
         {
-            code = code,
+            file = file,
+            code = compiler.code,
             
             ip = 1,
             consts = compiler.consts, varAddrs = compiler.varAddrs,
@@ -21,3 +22,12 @@ function Program.new(code, compiler)
         Program.mt
     )
 end
+
+return {
+    Program = Program,
+    ---@param file File
+    ---@param compiler Compiler
+    run = function (file, compiler)
+        return Program.new(file, compiler):run()
+    end
+}

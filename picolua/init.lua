@@ -46,5 +46,8 @@ return {
         local ast, err, epos = parser.parse(file, _tokens)if err then return nil, err, epos end
         if not ast then return end
         print(ast)
+        local compiler, err, epos = compiler.compile(file, _tokens)if err then return nil, err, epos end
+        if not compiler then return end
+        return program.run(file, compiler)
     end
 }
