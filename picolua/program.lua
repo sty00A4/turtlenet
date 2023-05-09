@@ -121,6 +121,118 @@ function Program:run()
             self:push(addr == 1 and true or false)
         elseif instr == ByteCode.String then
             self:push(self:const(addr))
+        elseif instr == ByteCode.Add then
+            local right, left = self:pop(), self:pop()
+            local success, value = pcall(function()
+                return left + right
+            end)
+            if not success then return nil, value end
+            self:push(value)
+        elseif instr == ByteCode.Sub then
+            local right, left = self:pop(), self:pop()
+            local success, value = pcall(function()
+                return left - right
+            end)
+            if not success then return nil, value end
+            self:push(value)
+        elseif instr == ByteCode.Mul then
+            local right, left = self:pop(), self:pop()
+            local success, value = pcall(function()
+                return left * right
+            end)
+            if not success then return nil, value end
+            self:push(value)
+        elseif instr == ByteCode.Div then
+            local right, left = self:pop(), self:pop()
+            local success, value = pcall(function()
+                return left / right
+            end)
+            if not success then return nil, value end
+            self:push(value)
+        elseif instr == ByteCode.Mod then
+            local right, left = self:pop(), self:pop()
+            local success, value = pcall(function()
+                return left % right
+            end)
+            if not success then return nil, value end
+            self:push(value)
+        elseif instr == ByteCode.Pow then
+            local right, left = self:pop(), self:pop()
+            local success, value = pcall(function()
+                return left ^ right
+            end)
+            if not success then return nil, value end
+            self:push(value)
+        elseif instr == ByteCode.EQ then
+            local right, left = self:pop(), self:pop()
+            local success, value = pcall(function()
+                return left == right
+            end)
+            if not success then return nil, value end
+            self:push(value)
+        elseif instr == ByteCode.NE then
+            local right, left = self:pop(), self:pop()
+            local success, value = pcall(function()
+                return left ~= right
+            end)
+            if not success then return nil, value end
+            self:push(value)
+        elseif instr == ByteCode.LT then
+            local right, left = self:pop(), self:pop()
+            local success, value = pcall(function()
+                return left < right
+            end)
+            if not success then return nil, value end
+            self:push(value)
+        elseif instr == ByteCode.GT then
+            local right, left = self:pop(), self:pop()
+            local success, value = pcall(function()
+                return left > right
+            end)
+            if not success then return nil, value end
+            self:push(value)
+        elseif instr == ByteCode.LE then
+            local right, left = self:pop(), self:pop()
+            local success, value = pcall(function()
+                return left <= right
+            end)
+            if not success then return nil, value end
+            self:push(value)
+        elseif instr == ByteCode.GE then
+            local right, left = self:pop(), self:pop()
+            local success, value = pcall(function()
+                return left >= right
+            end)
+            if not success then return nil, value end
+            self:push(value)
+        elseif instr == ByteCode.And then
+            local right, left = self:pop(), self:pop()
+            local success, value = pcall(function()
+                return left and right
+            end)
+            if not success then return nil, value end
+            self:push(value)
+        elseif instr == ByteCode.Or then
+            local right, left = self:pop(), self:pop()
+            local success, value = pcall(function()
+                return left or right
+            end)
+            if not success then return nil, value end
+            self:push(value)
+        elseif instr == ByteCode.Neg then
+            local right = self:pop()
+            local success, value = pcall(function()
+                return -right
+            end)
+            if not success then return nil, value end
+            self:push(value)
+        elseif instr == ByteCode.Not then
+            local right = self:pop()
+            local success, value = pcall(function()
+                return not right
+            end)
+            if not success then return nil, value end
+            self:push(value)
         end
         self.ip = self.ip + 3
     end
