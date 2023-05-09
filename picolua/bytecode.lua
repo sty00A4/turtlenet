@@ -1,4 +1,4 @@
-INSTRUCTION_SIZE = 3
+INSTRUCTION_SIZE = 5
 INSTRUCTION_ADDR_OFFSET = 1
 INSTRUCTION_COUNT_OFFSET = 2
 INSTRUCTION_LN_OFFSET = 3
@@ -93,6 +93,28 @@ function ByteCode.tostring(instr, addr, count)
         addr == 0 and " " or addr,
         (count == 1 and instr ~= ByteCode.Call and instr ~= ByteCode.CreateTable) and " " or count
     )
+end
+---@param instr ByteCode
+function ByteCode.name(instr)
+    local names = {
+        [ByteCode.Add] = "add",
+        [ByteCode.Sub] = "sub",
+        [ByteCode.Mul] = "mul",
+        [ByteCode.Div] = "div",
+        [ByteCode.Mod] = "mod",
+        [ByteCode.Pow] = "pow",
+        [ByteCode.EQ] = "eq",
+        [ByteCode.NE] = "ne",
+        [ByteCode.LT] = "lt",
+        [ByteCode.GT] = "gt",
+        [ByteCode.LE] = "le",
+        [ByteCode.LT] = "ge",
+        [ByteCode.And] = "and",
+        [ByteCode.Or] = "or",
+        [ByteCode.Neg] = "neg",
+        [ByteCode.Not] = "not",
+    }
+    return names[instr] or "?"
 end
 
 return {

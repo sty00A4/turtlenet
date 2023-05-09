@@ -49,6 +49,6 @@ return {
         local compiler, err, epos = compiler.compile(file, ast) if err then return nil, err, epos end
         if not compiler then return end
         -- print(bytecode.ByteCode.displayCode(compiler.code))
-        program.run(file, compiler)
+        return program.run(file, compiler)
     end
 }

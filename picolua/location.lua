@@ -17,7 +17,11 @@ end
 
 local Position = {
     mt = {
-        __name = "position"
+        __name = "position",
+        ---@param self Position
+        __tostring = function(self)
+            return ("%s:%s:%s"):format(self.file.path, self.ln.start, self.col.start)
+        end
     }
 }
 ---@param file File

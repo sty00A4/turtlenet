@@ -4,39 +4,51 @@ local ByteCode = bytecode.ByteCode
 ---@alias Code table<integer, ByteCode>
 
 ---@param code Code
+---@param ln integer
+---@param col integer
 ---@param instr ByteCode
 ---@param addr Addr|nil
 ---@param count integer|nil
-local function writeCode(code, instr, addr, count)
+local function writeCode(code, ln, col, instr, addr, count)
     addr = addr or 0
     count = count or 1
     table.insert(code, instr)
     table.insert(code, addr)
     table.insert(code, count)
+    table.insert(code, ln)
+    table.insert(code, col)
 end
 ---@param code Code
 ---@param pos Addr
+---@param ln integer
+---@param col integer
 ---@param instr ByteCode
 ---@param addr Addr|nil
 ---@param count integer|nil
-local function insertCode(code, pos, instr, addr, count)
+local function insertCode(code, pos, ln, col, instr, addr, count)
     addr = addr or 0
     count = count or 1
+    table.insert(code, pos, col)
+    table.insert(code, pos, ln)
     table.insert(code, pos, count)
     table.insert(code, pos, addr)
     table.insert(code, pos, instr)
 end
 ---@param code Code
 ---@param pos Addr
+---@param ln integer
+---@param col integer
 ---@param instr ByteCode
 ---@param addr Addr|nil
 ---@param count integer|nil
-local function overwriteCode(code, pos, instr, addr, count)
+local function overwriteCode(code, pos, ln, col, instr, addr, count)
     addr = addr or 0
     count = count or 1
     code[pos] = instr
     code[pos + INSTRUCTION_ADDR_OFFSET] = addr
     code[pos + INSTRUCTION_COUNT_OFFSET] = count
+    code[pos + INSTRUCTION_LN_OFFSET] = ln
+    code[pos + INSTRUCTION_COL_OFFSET] = col
 end
 
 local Compiler = {
@@ -93,7 +105,7 @@ function Compiler:chunk(chunk)
     for _, statement in ipairs(chunk.nodes) do
         local _, err, epos = self:statement(statement) if err then return nil, err, epos end
     end
-    writeCode(self.code, ByteCode.Halt)
+    writeCode(self.code, 0, 0, ByteCode.Halt)
 end
 ---@param self Compiler
 ---@param statement StatementNode
@@ -111,11 +123,11 @@ function Compiler:statement(statement)
             if value then
                 local typ, err, epos = self:expression(value) if err then return nil, err, epos end
             else
-                writeCode(self.code, ByteCode.Nil)
+                writeCode(self.code, path.pos.ln.start, path.pos.col.start, ByteCode.Nil)
             end
             if path.type == "id-node" then
                 local addr = self:newConst(path.id)
-                writeCode(self.code, ByteCode.Set, addr)
+                writeCode(self.code, path.pos.ln.start, path.pos.col.start, ByteCode.Set, addr)
             else
                 return nil, "field assignment not supported yet", path.pos
             end
@@ -127,19 +139,19 @@ function Compiler:statement(statement)
             local typ, err, epos = self:expression(arg) if err then return nil, err, epos end
         end
         local _, err, epos = self:path(head) if err then return nil, err, epos end
-        writeCode(self.code, ByteCode.Call, 0, #args)
+        writeCode(self.code, statement.pos.ln.start, statement.pos.col.start, ByteCode.Call, 0, #args)
     end
     if statement.type == "repeat-node" then
         local count, body = statement.count, statement.body
         local typ, err, epos = self:expression(count) if err then return nil, err, epos end
         local addr = self:currentPos()
         local _, err, epos = self:statement(body) if err then return nil, err, epos end
-        writeCode(self.code, ByteCode.Number, 1)
-        writeCode(self.code, ByteCode.Sub)
-        writeCode(self.code, ByteCode.Copy)
-        writeCode(self.code, ByteCode.Number, 0)
-        writeCode(self.code, ByteCode.LE)
-        writeCode(self.code, ByteCode.JumpIfNot, addr)
+        writeCode(self.code, statement.pos.ln.start, statement.pos.col.start, ByteCode.Number, 1)
+        writeCode(self.code, statement.pos.ln.start, statement.pos.col.start, ByteCode.Sub)
+        writeCode(self.code, statement.pos.ln.start, statement.pos.col.start, ByteCode.Copy)
+        writeCode(self.code, statement.pos.ln.start, statement.pos.col.start, ByteCode.Number, 0)
+        writeCode(self.code, statement.pos.ln.start, statement.pos.col.start, ByteCode.LE)
+        writeCode(self.code, statement.pos.ln.start, statement.pos.col.start, ByteCode.JumpIfNot, addr)
     end
     if statement.type == "if-node" then
         local conds, cases, elseCase = statement.conds, statement.cases, statement.elseCase
@@ -148,12 +160,12 @@ function Compiler:statement(statement)
             local cond, case = conds[i], cases[i]
             local typ, err, epos = self:expression(cond) if err then return nil, err, epos end
             local bodyAddr = self:currentPos()
-            writeCode(self.code, ByteCode.None) -- placeholder
+            writeCode(self.code, cond.pos.ln.start, cond.pos.col.start, ByteCode.None) -- placeholder
             local _, err, epos = self:statement(case) if err then return nil, err, epos end
             local exitAddr = self:currentPos()
-            overwriteCode(self.code, bodyAddr, ByteCode.JumpIfNot, exitAddr + INSTRUCTION_SIZE)
+            overwriteCode(self.code, statement.pos.ln.start, statement.pos.col.start, bodyAddr, ByteCode.JumpIfNot, exitAddr + INSTRUCTION_SIZE)
             table.insert(addExitAddrQueue, self:currentPos())
-            writeCode(self.code, ByteCode.Jump)
+            writeCode(self.code, statement.pos.ln.start, statement.pos.col.start, ByteCode.Jump)
         end
         if elseCase then
             local _, err, epos = self:statement(elseCase) if err then return nil, err, epos end
@@ -168,17 +180,17 @@ function Compiler:statement(statement)
         local condAddr = self:currentPos()
         local typ, err, epos = self:expression(cond) if err then return nil, err, epos end
         local bodyAddr = self:currentPos()
-        writeCode(self.code, ByteCode.None) -- placeholder
+        writeCode(self.code, statement.pos.ln.start, statement.pos.col.start, ByteCode.None) -- placeholder
         local _, err, epos = self:statement(body) if err then return nil, err, epos end
         local exitAddr = self:currentPos()
-        writeCode(self.code, ByteCode.Jump, condAddr)
-        overwriteCode(self.code, bodyAddr, ByteCode.JumpIfNot, exitAddr + INSTRUCTION_SIZE * 2)
+        writeCode(self.code, statement.pos.ln.start, statement.pos.col.start, ByteCode.Jump, condAddr)
+        overwriteCode(self.code, statement.pos.ln.start, statement.pos.col.start, bodyAddr, ByteCode.JumpIfNot, exitAddr + INSTRUCTION_SIZE * 2)
     end
     if statement.type == "wait-node" then
         local cond = statement.cond
         local addr = self:currentPos()
         local typ, err, epos = self:expression(cond) if err then return nil, err, epos end
-        writeCode(self.code, ByteCode.JumpIfNot, addr)
+        writeCode(self.code, statement.pos.ln.start, statement.pos.col.start, ByteCode.JumpIfNot, addr)
     end
 end
 ---@param self Compiler
@@ -190,15 +202,15 @@ function Compiler:expression(expression)
         ---@type number
         ---@diagnostic disable-next-line: assign-type-mismatch
         local value = expression.value
-        writeCode(self.code, ByteCode.Number, value)
+        writeCode(self.code, expression.pos.ln.start, expression.pos.col.start, ByteCode.Number, value)
     elseif expression.type == "boolean-node" then
         ---@type boolean
         ---@diagnostic disable-next-line: assign-type-mismatch
         local value = expression.value
-        writeCode(self.code, ByteCode.Boolean, value and 1 or 0)
+        writeCode(self.code, expression.pos.ln.start, expression.pos.col.start, ByteCode.Boolean, value and 1 or 0)
     elseif expression.type == "string-node" then
         local addr = self:newConst(expression.value)
-        writeCode(self.code, ByteCode.String, addr)
+        writeCode(self.code, expression.pos.ln.start, expression.pos.col.start, ByteCode.String, addr)
     elseif expression.type == "binary-node" then
         ---@type BinaryOperator
         ---@diagnostic disable-next-line: assign-type-mismatch
@@ -222,7 +234,7 @@ function Compiler:expression(expression)
             ["and"] = ByteCode.And,
             ["or"] = ByteCode.Or,
         }
-        writeCode(self.code, binaryByteCode[op])
+        writeCode(self.code, expression.pos.ln.start, expression.pos.col.start, binaryByteCode[op])
     elseif expression.type == "unary-node" then
         ---@type UnaryOperator
         ---@diagnostic disable-next-line: assign-type-mismatch
@@ -233,7 +245,7 @@ function Compiler:expression(expression)
             ["-"] = ByteCode.Neg,
             ["not"] = ByteCode.Not,
         }
-        writeCode(self.code, unaryByteCode[op])
+        writeCode(self.code, expression.pos.ln.start, expression.pos.col.start, unaryByteCode[op])
     end
 end
 ---@param self Compiler
@@ -242,17 +254,17 @@ function Compiler:path(path)
     if path.type == "id-node" then
         local id = path.id
         local addr = self:newConst(id)
-        writeCode(self.code, ByteCode.Get, addr)
+        writeCode(self.code, path.pos.ln.start, path.pos.col.start, ByteCode.Get, addr)
     elseif path.type == "field-node" then
         local head, field = path.head, path.field
         local _, err, epos = self:path(head) if err then return nil, err, epos end
         local addr = self:newConst(field)
-        writeCode(self.code, ByteCode.Field, addr)
+        writeCode(self.code, path.pos.ln.start, path.pos.col.start, ByteCode.Field, addr)
     elseif path.type == "index-node" then
         local head, index = path.head, path.field
         local _, err, epos = self:path(head) if err then return nil, err, epos end
         local typ, err, epos = self:expression(index) if err then return nil, err, epos end
-        writeCode(self.code, ByteCode.Index)
+        writeCode(self.code, path.pos.ln.start, path.pos.col.start, ByteCode.Index)
     end
 end
 

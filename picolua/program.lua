@@ -1,3 +1,5 @@
+local location = require "turtlenet.picolua.location"
+local Position = location.Position
 local bytecode = require "turtlenet.picolua.bytecode"
 local ByteCode = bytecode.ByteCode
 local Value = {
@@ -15,6 +17,19 @@ function Value.new(value)
         },
         Value.mt
     )
+end
+
+local function fromLuaError(error)
+    local idx = 1
+    while error:sub(idx, idx) ~= ":" do
+        idx = idx + 1
+    end
+    idx = idx + 1
+    while error:sub(idx, idx) ~= ":" do
+        idx = idx + 1
+    end
+    idx = idx + 2
+    return error:sub(idx)
 end
 
 local Program = {
@@ -72,10 +87,22 @@ function Program:returnAddr()
     return table.remove(self.callStack)
 end
 
+---@param instr ByteCode
+---@param left any
+---@param right any
+local function attemptBinaryError(instr, left, right)
+    return ("attempt to perform '%s' on %s with %s"):format(ByteCode.name(instr), type(left), type(right))
+end
+---@param instr ByteCode
+---@param right any
+local function attemptUnaryError(instr, right)
+    return ("attempt to perform '%s' on %s"):format(ByteCode.name(instr), type(right))
+end
 ---@param self Program
 function Program:run()
     while self.ip <= #self.code do
-        local instr, addr, count = self.code[self.ip], self.code[self.ip + INSTRUCTION_ADDR_OFFSET], self.code[self.ip + INSTRUCTION_COUNT_OFFSET]
+        local instr, addr, count, ln, col = self.code[self.ip], self.code[self.ip + INSTRUCTION_ADDR_OFFSET], self.code[self.ip + INSTRUCTION_COUNT_OFFSET],
+        self.code[self.ip + INSTRUCTION_LN_OFFSET], self.code[self.ip + INSTRUCTION_COL_OFFSET]
         
         if instr == ByteCode.Halt then
             break
@@ -143,7 +170,7 @@ function Program:run()
             local success, value = pcall(function()
                 return left + right
             end)
-            if not success then return nil, value end
+            if not success then return nil, attemptBinaryError(instr, left, right), Position.new(self.file, ln, ln, col, col) end
             self:push(value)
             self.ip = self.ip + INSTRUCTION_SIZE
         elseif instr == ByteCode.Sub then
@@ -151,7 +178,7 @@ function Program:run()
             local success, value = pcall(function()
                 return left - right
             end)
-            if not success then return nil, value end
+            if not success then return nil, attemptBinaryError(instr, left, right), Position.new(self.file, ln, ln, col, col) end
             self:push(value)
             self.ip = self.ip + INSTRUCTION_SIZE
         elseif instr == ByteCode.Mul then
@@ -159,7 +186,7 @@ function Program:run()
             local success, value = pcall(function()
                 return left * right
             end)
-            if not success then return nil, value end
+            if not success then return nil, attemptBinaryError(instr, left, right), Position.new(self.file, ln, ln, col, col) end
             self:push(value)
             self.ip = self.ip + INSTRUCTION_SIZE
         elseif instr == ByteCode.Div then
@@ -167,7 +194,7 @@ function Program:run()
             local success, value = pcall(function()
                 return left / right
             end)
-            if not success then return nil, value end
+            if not success then return nil, attemptBinaryError(instr, left, right), Position.new(self.file, ln, ln, col, col) end
             self:push(value)
             self.ip = self.ip + INSTRUCTION_SIZE
         elseif instr == ByteCode.Mod then
@@ -175,7 +202,7 @@ function Program:run()
             local success, value = pcall(function()
                 return left % right
             end)
-            if not success then return nil, value end
+            if not success then return nil, attemptBinaryError(instr, left, right), Position.new(self.file, ln, ln, col, col) end
             self:push(value)
             self.ip = self.ip + INSTRUCTION_SIZE
         elseif instr == ByteCode.Pow then
@@ -183,7 +210,7 @@ function Program:run()
             local success, value = pcall(function()
                 return left ^ right
             end)
-            if not success then return nil, value end
+            if not success then return nil, attemptBinaryError(instr, left, right), Position.new(self.file, ln, ln, col, col) end
             self:push(value)
             self.ip = self.ip + INSTRUCTION_SIZE
         elseif instr == ByteCode.EQ then
@@ -191,7 +218,7 @@ function Program:run()
             local success, value = pcall(function()
                 return left == right
             end)
-            if not success then return nil, value end
+            if not success then return nil, attemptBinaryError(instr, left, right), Position.new(self.file, ln, ln, col, col) end
             self:push(value)
             self.ip = self.ip + INSTRUCTION_SIZE
         elseif instr == ByteCode.NE then
@@ -199,7 +226,7 @@ function Program:run()
             local success, value = pcall(function()
                 return left ~= right
             end)
-            if not success then return nil, value end
+            if not success then return nil, attemptBinaryError(instr, left, right), Position.new(self.file, ln, ln, col, col) end
             self:push(value)
             self.ip = self.ip + INSTRUCTION_SIZE
         elseif instr == ByteCode.LT then
@@ -207,7 +234,7 @@ function Program:run()
             local success, value = pcall(function()
                 return left < right
             end)
-            if not success then return nil, value end
+            if not success then return nil, attemptBinaryError(instr, left, right), Position.new(self.file, ln, ln, col, col) end
             self:push(value)
             self.ip = self.ip + INSTRUCTION_SIZE
         elseif instr == ByteCode.GT then
@@ -215,7 +242,7 @@ function Program:run()
             local success, value = pcall(function()
                 return left > right
             end)
-            if not success then return nil, value end
+            if not success then return nil, attemptBinaryError(instr, left, right), Position.new(self.file, ln, ln, col, col) end
             self:push(value)
             self.ip = self.ip + INSTRUCTION_SIZE
         elseif instr == ByteCode.LE then
@@ -223,7 +250,7 @@ function Program:run()
             local success, value = pcall(function()
                 return left <= right
             end)
-            if not success then return nil, value end
+            if not success then return nil, attemptBinaryError(instr, left, right), Position.new(self.file, ln, ln, col, col) end
             self:push(value)
             self.ip = self.ip + INSTRUCTION_SIZE
         elseif instr == ByteCode.GE then
@@ -231,7 +258,7 @@ function Program:run()
             local success, value = pcall(function()
                 return left >= right
             end)
-            if not success then return nil, value end
+            if not success then return nil, attemptBinaryError(instr, left, right), Position.new(self.file, ln, ln, col, col) end
             self:push(value)
             self.ip = self.ip + INSTRUCTION_SIZE
         elseif instr == ByteCode.And then
@@ -239,7 +266,7 @@ function Program:run()
             local success, value = pcall(function()
                 return left and right
             end)
-            if not success then return nil, value end
+            if not success then return nil, attemptBinaryError(instr, left, right), Position.new(self.file, ln, ln, col, col) end
             self:push(value)
             self.ip = self.ip + INSTRUCTION_SIZE
         elseif instr == ByteCode.Or then
@@ -247,7 +274,7 @@ function Program:run()
             local success, value = pcall(function()
                 return left or right
             end)
-            if not success then return nil, value end
+            if not success then return nil, attemptBinaryError(instr, left, right), Position.new(self.file, ln, ln, col, col) end
             self:push(value)
             self.ip = self.ip + INSTRUCTION_SIZE
         elseif instr == ByteCode.Neg then
@@ -255,7 +282,7 @@ function Program:run()
             local success, value = pcall(function()
                 return -right
             end)
-            if not success then return nil, value end
+            if not success then return nil, attemptUnaryError(instr, type(right)), Position.new(self.file, ln, ln, col, col) end
             self:push(value)
             self.ip = self.ip + INSTRUCTION_SIZE
         elseif instr == ByteCode.Not then
@@ -263,7 +290,7 @@ function Program:run()
             local success, value = pcall(function()
                 return not right
             end)
-            if not success then return nil, value end
+            if not success then return nil, attemptUnaryError(instr, type(right)), Position.new(self.file, ln, ln, col, col) end
             self:push(value)
             self.ip = self.ip + INSTRUCTION_SIZE
         elseif instr == ByteCode.Copy then
@@ -285,6 +312,6 @@ return {
     ---@param file File
     ---@param compiler Compiler
     run = function (file, compiler)
-        Program.new(file, compiler):run()
+        return Program.new(file, compiler):run()
     end
 }
