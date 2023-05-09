@@ -198,6 +198,7 @@ end
 function Compiler:expression(expression)
     if type(expression) == "nil" then error("expression is nil", 2) end
     if expression.type == "id-node" or expression.type == "field-node" or expression.type == "index-node" then
+        ---@diagnostic disable-next-line: param-type-mismatch
         return self:path(expression)
     elseif expression.type == "number-node" then
         ---@type number
