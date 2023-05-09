@@ -167,7 +167,11 @@ function Program:run()
             for i = count, 1, -1 do
                 args[i] = self:pop()
             end
-            local returns = { func(table.unpack(args)) }
+            local returns = { pcall(func, table.unpack(args)) }
+            local success = table.remove(returns, 1)
+            if not success then
+                return nil, fromLuaError(returns), Position.new(self.file, ln, ln, col, col)
+            end
             if instr == ByteCode.CallReturn then
                 for _, value in ipairs(returns) do
                     self:push(value)
