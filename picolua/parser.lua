@@ -310,6 +310,23 @@ function Parser:expression()
         if not left then return end
         local token, err, epos = self:check() if err then return nil, err, epos end
         if not token then return end
+
+        if token.kind == TokenKind.Call then
+            self:advance()
+            local args = {}
+            while true do
+                local token, err, epos = self:check() if err then return nil, err, epos end
+                if not token then return end
+                if token.kind == TokenKind.ExprOut then break end
+                local arg, err, epos = self:expression() if err then return nil, err, epos end
+                table.insert(args, arg)
+            end
+            local token, err, epos = self:expect(TokenKind.ExprOut) if err then return nil, err, epos end
+            if not token then return end
+            pos:extend(token.pos)
+            return nodes.CallExprNode.new(left, args, pos)
+        end
+
         local op = "+"
         if token.kind == TokenKind.Add then
             op = "+"

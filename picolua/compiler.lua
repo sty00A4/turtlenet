@@ -247,6 +247,13 @@ function Compiler:expression(expression)
             ["not"] = ByteCode.Not,
         }
         writeCode(self.code, expression.pos.ln.start, expression.pos.col.start, unaryByteCode[op])
+    elseif expression.type == "call-expr-node" then
+        local head, args = expression.head, expression.args
+        for _, arg in ipairs(args) do
+            local typ, err, epos = self:expression(arg) if err then return nil, err, epos end
+        end
+        local typ, err, epos = self:expression(head) if err then return nil, err, epos end
+        writeCode(self.code, expression.pos.ln.start, expression.pos.col.start, ByteCode.CallReturn, 0, #args)
     end
 end
 ---@param self Compiler

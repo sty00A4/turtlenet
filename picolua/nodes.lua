@@ -187,7 +187,35 @@ function UnaryNode.new(op, right, pos)
     )
 end
 
----@alias EvalNode PathNode|NumberNode|BooleanNode|StringNode|BinaryNode|UnaryNode
+local CallExprNode = {
+    mt = {
+        __name = "call-expr-node",
+        ---@param self CallExprNode
+        __tostring = function (self)
+            local args = ""
+            for _, arg in ipairs(self.args) do
+                args = args .. tostring(arg) .. " "
+            end
+            return ("(%s: %s)"):format(self.head, args)
+        end
+    }
+}
+---@param head EvalNode
+---@param args table<integer, EvalNode>
+---@param pos Position
+---@return CallExprNode
+function CallExprNode.new(head, args, pos)
+    return setmetatable(
+        ---@class CallExprNode
+        {
+            type = CallExprNode.mt.__name,
+            head = head, args = args, pos = pos,
+        },
+        CallExprNode.mt
+    )
+end
+
+---@alias EvalNode PathNode|NumberNode|BooleanNode|StringNode|BinaryNode|UnaryNode|CallExprNode
 
 local BlockNode = {
     mt = {
@@ -424,7 +452,7 @@ end
 return {
     IDNode = IDNode, FieldNode = FieldNode, IndexNode = IndexNode,
     NumberNode = NumberNode, BooleanNode = BooleanNode, StringNode = StringNode,
-    BinaryNode = BinaryNode, UnaryNode = UnaryNode,
+    BinaryNode = BinaryNode, UnaryNode = UnaryNode, CallExprNode = CallExprNode,
     BlockNode = BlockNode,
     CallNode = CallNode, AssignNode = AssignNode,
     IfNode = IfNode, WhileNode = WhileNode, ForNode = ForNode,
