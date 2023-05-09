@@ -124,28 +124,54 @@ function Parser:statement(endTokens)
     end
     local pos = token.pos
     if token.kind == TokenKind.ID then
+        local paths = {}
         local path, err, epos = self:path() if err then return nil, err, epos end
         if not path then return end
+        table.insert(paths, path)
         local token = self:token()
         if token then
-            if token.kind == TokenKind.Equal then
+            while token.kind == TokenKind.Seprate do
                 self:advance()
-                local value, err, epos = self:expression() if err then return nil, err, epos end
-                if not value then return end
-                pos:extend(value.pos)
-                return nodes.AssignNode.new(path, value, pos)
-            elseif token.kind == TokenKind.Call then
-                self:advance()
-                local args = {}
-                while self:token() do
-                    local arg, err, epos = self:expression() if err then return nil, err, epos end
-                    if not arg then break end
-                    pos:extend(arg.pos)
-                    table.insert(args, arg)
+                local path, err, epos = self:path() if err then return nil, err, epos end
+                if not path then return end
+                table.insert(paths, path)
+                token = self:token()
+                if not token then break end
+            end
+            if token then
+                if token.kind == TokenKind.Equal then
+                    local values = {}
+                    self:advance()
+                    local value, err, epos = self:expression() if err then return nil, err, epos end
+                    if not value then return end
+                    table.insert(values, value)
+                    pos:extend(value.pos)
+                    local token = self:token()
+                    if token then
+                        while token.kind == TokenKind.Seprate do
+                            self:advance()
+                            local value, err, epos = self:expression() if err then return nil, err, epos end
+                            if not value then return end
+                            table.insert(values, value)
+                            pos:extend(value.pos)
+                            if not token then break end
+                        end
+                    end
+                    return nodes.AssignNode.new(paths, values, pos)
+                elseif token.kind == TokenKind.Call then
+                    if #paths > 1 then return nil, ("unexpected %s"):format(TokenKind.tostring(token.kind)), token.pos end
+                    self:advance()
+                    local args = {}
+                    while self:token() do
+                        local arg, err, epos = self:expression() if err then return nil, err, epos end
+                        if not arg then break end
+                        pos:extend(arg.pos)
+                        table.insert(args, arg)
+                    end
+                    return nodes.CallNode.new(path, args, pos)
+                else
+                    return nil, ("unexpected %s"):format(TokenKind.tostring(token.kind)), token.pos
                 end
-                return nodes.CallNode.new(path, args, pos)
-            else
-                return nil, ("unexpected %s"):format(TokenKind.tostring(token.kind)), token.pos
             end
         else
             pos:extend(path.pos)

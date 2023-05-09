@@ -30,23 +30,30 @@ function Compiler.new(file)
             code = {},
             ---@type table<ConstAddr, any>
             consts = {},
-            ---@type table<VarAddr, boolean>
-            varAddrs = {},
-            ---@type table<string, VarAddr>
-            vars = {},
-            ---@type table<FuncAddr, Addr>
-            funcs = {},
-            ---@type table<LuaFuncAddr, function>
-            luaFuncs = {},
+
+            newConst = Compiler.newConst,
 
             chunk = Compiler.chunk,
             statement = Compiler.statement,
             expression = Compiler.expression,
             path = Compiler.path,
-            getPath = Compiler.getPath,
+
+            optimisations = Compiler.optimisations
         },
         Compiler.mt
     )
+end
+
+---@param self Compiler
+function Compiler:newConst(value)
+    for addr, const in pairs(self.consts) do
+        if value == const then
+            return addr
+        end
+    end
+    local addr = #self.consts + 1
+    self.consts[addr] = value
+    return addr
 end
 
 ---@param self Compiler
@@ -60,10 +67,17 @@ end
 ---@param statement StatementNode
 function Compiler:statement(statement)
     if statement.type == "assign-node" then
-        local path, value = statement.path, statement.value
-        local typ, err, epos = self:expression(value) if err then return nil, err, epos end
-        local _, err, epos = self:getPath(path) if err then return nil, err, epos end
-        writeCode(self.code, ByteCode.Set, 0, 0)
+        local paths, values = statement.paths, statement.values
+        for i = 1, #paths do
+            local path, value = paths[i], values[i]
+            local typ, err, epos = self:expression(value) if err then return nil, err, epos end
+            if path.type == "id-node" then
+                local addr = self:newConst(path.id)
+                writeCode(self.code, ByteCode.Set, addr, 0)
+            else
+                return nil, "field assignment not supported yet", path.pos
+            end
+        end
     end
     if statement.type == "call-node" then
         local head, args = statement.head, statement.args
@@ -90,8 +104,7 @@ function Compiler:expression(expression)
         local value = expression.value
         writeCode(self.code, ByteCode.Boolean, value and 1 or 0, 0)
     elseif expression.type == "string-node" then
-        local addr = #self.consts + 1
-        table.insert(self.consts, expression.value)
+        local addr = self:newConst(expression.value)
         writeCode(self.code, ByteCode.String, addr, 0)
     elseif expression.type == "binary-node" then
         ---@type BinaryOperator
@@ -116,7 +129,7 @@ function Compiler:expression(expression)
             ["and"] = ByteCode.And,
             ["or"] = ByteCode.Or,
         }
-        writeCode(self.code, binaryByteCode[op], 0, 0)
+        writeCode(self.code, binaryByteCode[op], 0, 1)
     elseif expression.type == "unary-node" then
         ---@type UnaryOperator
         ---@diagnostic disable-next-line: assign-type-mismatch
@@ -127,7 +140,7 @@ function Compiler:expression(expression)
             ["-"] = ByteCode.Neg,
             ["not"] = ByteCode.Not,
         }
-        writeCode(self.code, unaryByteCode[op], 0, 0)
+        writeCode(self.code, unaryByteCode[op], 0, 1)
     end
 end
 ---@param self Compiler
@@ -135,33 +148,12 @@ end
 function Compiler:path(path)
     if path.type == "id-node" then
         local id = path.id
-        local addr = #self.consts + 1
-        table.insert(self.consts, id)
+        local addr = self:newConst(id)
         writeCode(self.code, ByteCode.Get, addr, 0)
     elseif path.type == "field-node" then
         local head, field = path.head, path.field
         local _, err, epos = self:path(head) if err then return nil, err, epos end
-        local addr = #self.consts + 1
-        table.insert(self.consts, field)
-        writeCode(self.code, ByteCode.Field, addr, 0)
-    elseif path.type == "index-node" then
-        local head, index = path.head, path.field
-        local _, err, epos = self:path(head) if err then return nil, err, epos end
-        local typ, err, epos = self:expression(index) if err then return nil, err, epos end
-        writeCode(self.code, ByteCode.Index, 0, 0)
-    end
-end
----@param self Compiler
----@param path PathNode
-function Compiler:getPath(path)
-    if path.type == "id-node" then
-        local id = path.id
-        writeCode(self.code, ByteCode.GetAddr, self.vars[id] or -1, 0)
-    elseif path.type == "field-node" then
-        local head, field = path.head, path.field
-        local _, err, epos = self:path(head) if err then return nil, err, epos end
-        local addr = #self.consts + 1
-        table.insert(self.consts, field)
+        local addr = self:newConst(field)
         writeCode(self.code, ByteCode.Field, addr, 0)
     elseif path.type == "index-node" then
         local head, index = path.head, path.field
@@ -171,6 +163,31 @@ function Compiler:getPath(path)
     end
 end
 
+Compiler.optimisations = {
+    ---@param self Compiler
+    count = function (self)
+        local ip = 1
+        while ip <= #self.code do
+            local instr1, addr1, count1 = self.code[ip], self.code[ip + 1], self.code[ip + 2]
+            ip = ip + 3
+            if instr1 ~= ByteCode.Call and instr1 ~= ByteCode.CreateTable then
+                local instr2, addr2, count2 = self.code[ip], self.code[ip + 1], self.code[ip + 2]
+                if instr1 == instr2 and addr1 == addr2 then
+                    local newCount = count1 + count2
+                    while instr1 == instr2 and addr1 == addr2 do
+                        table.remove(self.code, ip) table.remove(self.code, ip) table.remove(self.code, ip)
+                        instr2, addr2, count2 = self.code[ip], self.code[ip + 1], self.code[ip + 2]
+                        newCount = newCount + count2
+                    end
+                    ip = ip - 3
+                    self.code[ip], self.code[ip + 1], self.code[ip + 2] = instr1, addr1, newCount
+                    ip = ip + 3
+                end
+            end
+        end
+    end,
+}
+
 return {
     Compiler = Compiler,
     writeCode = writeCode,
@@ -179,6 +196,7 @@ return {
     compile = function (file, ast)
         local compiler = Compiler.new(file)
         local _, err, epos = compiler:chunk(ast) if err then return nil, err, epos end
+        compiler.optimisations.count(compiler)
         return compiler
     end
 }

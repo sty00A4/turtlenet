@@ -248,20 +248,28 @@ local AssignNode = {
         __name = "assign-node",
         ---@param self AssignNode
         __tostring = function (self)
-            return ("%s = %s"):format(self.path, self.value)
+            local paths = ""
+            for i, path in ipairs(self.paths) do
+                paths = paths .. tostring(path) .. (i == #self.paths and "" or ", ")
+            end
+            local values = ""
+            for i, value in ipairs(self.values) do
+                values = values .. tostring(value) .. (i == #self.values and "" or ", ")
+            end
+            return ("%s = %s"):format(paths, values)
         end
     }
 }
----@param path table<integer, PathNode>
----@param value table<integer, EvalNode>
+---@param paths table<integer, PathNode>
+---@param values table<integer, EvalNode>
 ---@param pos Position
 ---@return AssignNode
-function AssignNode.new(path, value, pos)
+function AssignNode.new(paths, values, pos)
     return setmetatable(
         ---@class AssignNode
         {
             type = AssignNode.mt.__name,
-            path = path, value = value, pos = pos,
+            paths = paths, values = values, pos = pos,
         },
         AssignNode.mt
     )

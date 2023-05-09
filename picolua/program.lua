@@ -12,10 +12,9 @@ function Program.new(file, compiler)
         {
             file = file,
             code = compiler.code,
+            consts = compiler.consts,
             
             ip = 1,
-            consts = compiler.consts, varAddrs = compiler.varAddrs,
-            funcs = compiler.funcs, luaFuncs = compiler.luaFuncs,
 
             run = Program.run
         },
