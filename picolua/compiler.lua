@@ -196,6 +196,7 @@ end
 ---@param self Compiler
 ---@param expression EvalNode
 function Compiler:expression(expression)
+    if type(expression) == "nil" then error("expression is nil", 2) end
     if expression.type == "id-node" or expression.type == "field-node" or expression.type == "index-node" then
         return self:path(expression)
     elseif expression.type == "number-node" then
@@ -261,7 +262,7 @@ function Compiler:path(path)
         local addr = self:newConst(field.id)
         writeCode(self.code, path.pos.ln.start, path.pos.col.start, ByteCode.Field, addr)
     elseif path.type == "index-node" then
-        local head, index = path.head, path.field
+        local head, index = path.head, path.index
         local _, err, epos = self:path(head) if err then return nil, err, epos end
         local typ, err, epos = self:expression(index) if err then return nil, err, epos end
         writeCode(self.code, path.pos.ln.start, path.pos.col.start, ByteCode.Index)

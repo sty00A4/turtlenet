@@ -147,12 +147,12 @@ function Program:run()
             self:push(head[field])
             self.ip = self.ip + INSTRUCTION_SIZE
         elseif instr == ByteCode.Index then
-            local index = self:const(addr)
+            local index = self:pop()
             local head = self:pop()
             if type(head) ~= "table" then
                 return nil, ("attempt to index into a %s"):format(type(head)), Position.new(self.file, ln, ln, col, col)
             end
-            if type(index) ~= "number" or type(index) ~= "string" then
+            if type(index) ~= "number" and type(index) ~= "string" then
                 return nil, ("attempt to index with a %s"):format(type(index)), Position.new(self.file, ln, ln, col, col)
             end
             self:push(head[index])
