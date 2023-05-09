@@ -33,7 +33,7 @@ local ByteCode = {
     Number = 0x21, -- value
     Boolean = 0x22, -- value
     String = 0x23, -- value
-    
+
     CreateTable = 0x30, -- pairAmount
 
     Add = 0x40,

@@ -25,22 +25,6 @@ end
 ---@param instr ByteCode
 ---@param addr Addr|nil
 ---@param count integer|nil
-local function insertCode(code, pos, ln, col, instr, addr, count)
-    addr = addr or 0
-    count = count or 1
-    table.insert(code, pos, col)
-    table.insert(code, pos, ln)
-    table.insert(code, pos, count)
-    table.insert(code, pos, addr)
-    table.insert(code, pos, instr)
-end
----@param code Code
----@param pos Addr
----@param ln integer
----@param col integer
----@param instr ByteCode
----@param addr Addr|nil
----@param count integer|nil
 local function overwriteCode(code, pos, ln, col, instr, addr, count)
     addr = addr or 0
     count = count or 1
@@ -163,7 +147,7 @@ function Compiler:statement(statement)
             writeCode(self.code, cond.pos.ln.start, cond.pos.col.start, ByteCode.None) -- placeholder
             local _, err, epos = self:statement(case) if err then return nil, err, epos end
             local exitAddr = self:currentPos()
-            overwriteCode(self.code, statement.pos.ln.start, statement.pos.col.start, bodyAddr, ByteCode.JumpIfNot, exitAddr + INSTRUCTION_SIZE)
+            overwriteCode(self.code, bodyAddr, statement.pos.ln.start, statement.pos.col.start, ByteCode.JumpIfNot, exitAddr + INSTRUCTION_SIZE)
             table.insert(addExitAddrQueue, self:currentPos())
             writeCode(self.code, statement.pos.ln.start, statement.pos.col.start, ByteCode.Jump)
         end
@@ -184,7 +168,7 @@ function Compiler:statement(statement)
         local _, err, epos = self:statement(body) if err then return nil, err, epos end
         local exitAddr = self:currentPos()
         writeCode(self.code, statement.pos.ln.start, statement.pos.col.start, ByteCode.Jump, condAddr)
-        overwriteCode(self.code, statement.pos.ln.start, statement.pos.col.start, bodyAddr, ByteCode.JumpIfNot, exitAddr + INSTRUCTION_SIZE * 2)
+        overwriteCode(self.code, bodyAddr, statement.pos.ln.start, statement.pos.col.start, ByteCode.JumpIfNot, exitAddr + INSTRUCTION_SIZE * 2)
     end
     if statement.type == "wait-node" then
         local cond = statement.cond

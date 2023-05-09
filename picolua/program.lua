@@ -20,16 +20,22 @@ function Value.new(value)
 end
 
 local function fromLuaError(error)
-    local idx = 1
-    while error:sub(idx, idx) ~= ":" do
+    if type(error) == "string" then
+        local idx = 1
+        while error:sub(idx, idx) ~= ":" do
+            idx = idx + 1
+        end
         idx = idx + 1
+        while error:sub(idx, idx) ~= ":" do
+            idx = idx + 1
+        end
+        idx = idx + 2
+        return error:sub(idx)
+    elseif type(error) then
+        return error.msg
+    else
+        return "unknown error"
     end
-    idx = idx + 1
-    while error:sub(idx, idx) ~= ":" do
-        idx = idx + 1
-    end
-    idx = idx + 2
-    return error:sub(idx)
 end
 
 local Program = {
@@ -54,7 +60,7 @@ function Program.new(file, compiler)
             ---@type table<integer, Addr>
             callStack = {},
 
-            push = Program.push, pop = Program.pop,
+            push = Program.push, pop = Program.pop, popSafe = Program.popSafe,
             const = Program.const,
             newCall = Program.newCall, returnAddr = Program.returnAddr,
             run = Program.run,
@@ -72,6 +78,10 @@ function Program:pop()
     local value = table.remove(self.stack)
     if not value then error("stack underflow", 2) end
     return value.value
+end
+---@param self Program
+function Program:popSafe()
+    return table.remove(self.stack)
 end
 ---@param self Program
 function Program:const(addr)
@@ -135,7 +145,7 @@ function Program:run()
         elseif instr == ByteCode.Set then
             local key = self:const(addr)
             for _ = 1, count do
-                _G[key] = self:pop()
+                _G[key] = self:popSafe()
             end
             self.ip = self.ip + INSTRUCTION_SIZE
         elseif instr == ByteCode.Field then
@@ -179,16 +189,24 @@ function Program:run()
             end
             self.ip = self.ip + INSTRUCTION_SIZE
         elseif instr == ByteCode.Nil then
-            self:push()
+            for i = 1, count do
+                self:push()
+            end
             self.ip = self.ip + INSTRUCTION_SIZE
         elseif instr == ByteCode.Number then
-            self:push(addr)
+            for i = 1, count do
+                self:push(addr)
+            end
             self.ip = self.ip + INSTRUCTION_SIZE
         elseif instr == ByteCode.Boolean then
-            self:push(addr == 1 and true or false)
+            for i = 1, count do
+                self:push(addr == 1 and true or false)
+            end
             self.ip = self.ip + INSTRUCTION_SIZE
         elseif instr == ByteCode.String then
-            self:push(self:const(addr))
+            for i = 1, count do
+                self:push(self:const(addr))
+            end
             self.ip = self.ip + INSTRUCTION_SIZE
         elseif instr == ByteCode.Add then
             local right, left = self:pop(), self:pop()
@@ -329,7 +347,7 @@ function Program:run()
             self:push(a)
             self.ip = self.ip + INSTRUCTION_SIZE
         else
-            error(("todo: %s"):format(ByteCode.tostring(instr, addr, count)))
+            error(("todo: %s (raw = 0x%x %s %s)"):format(ByteCode.tostring(instr, addr, count), instr, addr, count))
         end
     end
 end

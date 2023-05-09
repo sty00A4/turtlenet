@@ -41,6 +41,7 @@ end
 local function run(path)
     local compiler, err, epos = compile(path)
     if not compiler then return end
+    -- print(bytecode.ByteCode.displayCode(compiler.code))
     return program.run(compiler.file, compiler)
 end
 
