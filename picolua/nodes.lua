@@ -379,15 +379,14 @@ local WaitNode = {
     }
 }
 ---@param cond EvalNode
----@param body StatementNode
 ---@param pos Position
 ---@return WaitNode
-function WaitNode.new(cond, body, pos)
+function WaitNode.new(cond, pos)
     return setmetatable(
         ---@class WaitNode
         {
             type = WaitNode.mt.__name,
-            cond = cond, body = body, pos = pos,
+            cond = cond, pos = pos,
         },
         WaitNode.mt
     )

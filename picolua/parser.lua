@@ -241,6 +241,27 @@ function Parser:statement(endTokens)
             end
         end
         return nodes.WhileNode.new(cond, body, pos)
+    elseif token.kind == TokenKind.Repeat then
+        self:advance()
+        local count, err, epos = self:expression() if err then return nil, err, epos end
+        if not count then return nil, ("expected expression, got %s"):format(self:token() and TokenKind.tostring(self:token().kind) or "end of input") end
+        self:expect(TokenKind.Do)
+        local body, err, epos = self:statement() if err then return nil, err, epos end
+        if not body then return nil, ("expected statement, got %s"):format(self:token() and TokenKind.tostring(self:token().kind) or "end of input") end
+        pos:extend(body.pos)
+        local token = self:token()
+        if token then
+            pos:extend(token.pos)
+            if token.kind == TokenKind.End then self:advanceLine() end
+        else
+            self:advanceLine()
+            local token = self:token()
+            if token then
+                pos:extend(token.pos)
+                if token.kind == TokenKind.End then self:advanceLine() end
+            end
+        end
+        return nodes.RepeatNode.new(count, body, pos)
     else
         return nil, ("unexpected %s"):format(TokenKind.tostring(token.kind)), token.pos
     end

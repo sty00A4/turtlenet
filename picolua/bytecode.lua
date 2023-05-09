@@ -1,3 +1,9 @@
+INSTRUCTION_SIZE = 3
+INSTRUCTION_ADDR_OFFSET = 1
+INSTRUCTION_COUNT_OFFSET = 2
+INSTRUCTION_LN_OFFSET = 3
+INSTRUCTION_COL_OFFSET = 4
+
 ---@alias ByteCode integer
 ---@alias Addr integer
 ---@alias VarAddr integer
@@ -21,6 +27,7 @@ local ByteCode = {
     Index = 0x14,
     SetIndex = 0x15,
     Call = 0x16, -- funcAddr argAmount
+    CallReturn = 0x17, -- funcAddr argAmount
 
     Nil = 0x20,
     Number = 0x21, -- value
@@ -45,25 +52,47 @@ local ByteCode = {
     Or = 0x4d,
     Neg = 0x4e,
     Not = 0x4f,
+    Copy = 0x60,
+    Swap = 0x61,
 }
 
 ---@param code Code
-function ByteCode.displayCode(code)
+---@param start integer|nil
+---@param stop integer|nil
+function ByteCode.displayCode(code, start, stop)
+    start = start or 0
+    stop = stop or math.floor(#code / INSTRUCTION_SIZE)
     local s = ""
-    local idx = 1
-    while idx <= #code do
-        local instr, addr, count = code[idx], code[idx + 1], code[idx + 2]
+    local idx = (start * INSTRUCTION_SIZE) + 1
+    while idx <= (stop * INSTRUCTION_SIZE) + 1 do
+        local instr, addr, count = code[idx], code[idx + INSTRUCTION_ADDR_OFFSET], code[idx + INSTRUCTION_COUNT_OFFSET]
+        if not (instr and addr and count) then break end
         local instrName = "?"
         for name, number in pairs(ByteCode) do
             if instr == number then
                 instrName = name:upper()
             end
         end
-        s = s .. ("%s\t%s\t%s"):format(instrName, addr, count) .. "\n"
-
-        idx = idx + 3
+        s = s .. ("%s: %s"):format(idx, ByteCode.tostring(instr, addr, count)) .. "\n"
+        idx = idx + INSTRUCTION_SIZE
     end
     return s
+end
+---@param instr ByteCode
+---@param addr Addr
+---@param count integer
+function ByteCode.tostring(instr, addr, count)
+    local instrName = "?"
+    for name, number in pairs(ByteCode) do
+        if instr == number then
+            instrName = name:upper()
+        end
+    end
+    return ("%s\t%s\t%s"):format(
+        instrName,
+        addr == 0 and " " or addr,
+        (count == 1 and instr ~= ByteCode.Call and instr ~= ByteCode.CreateTable) and " " or count
+    )
 end
 
 return {

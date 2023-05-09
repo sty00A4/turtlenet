@@ -4,15 +4,39 @@ local ByteCode = bytecode.ByteCode
 ---@alias Code table<integer, ByteCode>
 
 ---@param code Code
----@param bytecode ByteCode
----@param addr integer|nil
+---@param instr ByteCode
+---@param addr Addr|nil
 ---@param count integer|nil
-local function writeCode(code, bytecode, addr, count)
+local function writeCode(code, instr, addr, count)
     addr = addr or 0
     count = count or 1
-    table.insert(code, bytecode)
+    table.insert(code, instr)
     table.insert(code, addr)
     table.insert(code, count)
+end
+---@param code Code
+---@param pos Addr
+---@param instr ByteCode
+---@param addr Addr|nil
+---@param count integer|nil
+local function insertCode(code, pos, instr, addr, count)
+    addr = addr or 0
+    count = count or 1
+    table.insert(code, pos, count)
+    table.insert(code, pos, addr)
+    table.insert(code, pos, instr)
+end
+---@param code Code
+---@param pos Addr
+---@param instr ByteCode
+---@param addr Addr|nil
+---@param count integer|nil
+local function overwriteCode(code, pos, instr, addr, count)
+    addr = addr or 0
+    count = count or 1
+    code[pos] = instr
+    code[pos + INSTRUCTION_ADDR_OFFSET] = addr
+    code[pos + INSTRUCTION_COUNT_OFFSET] = count
 end
 
 local Compiler = {
@@ -34,6 +58,7 @@ function Compiler.new(file)
             consts = {},
 
             newConst = Compiler.newConst,
+            currentPos = Compiler.currentPos,
 
             chunk = Compiler.chunk,
             statement = Compiler.statement,
@@ -57,6 +82,10 @@ function Compiler:newConst(value)
     self.consts[addr] = value
     return addr
 end
+---@param self Compiler
+function Compiler:currentPos()
+    return #self.code + 1
+end
 
 ---@param self Compiler
 ---@param chunk ChunkNode
@@ -69,6 +98,12 @@ end
 ---@param self Compiler
 ---@param statement StatementNode
 function Compiler:statement(statement)
+    if statement.type == "block-node" then
+        local nodes = statement.nodes
+        for _, statement in ipairs(nodes) do
+            local _, err, epos = self:statement(statement) if err then return nil, err, epos end
+        end
+    end
     if statement.type == "assign-node" then
         local paths, values = statement.paths, statement.values
         for i = 1, #paths do
@@ -93,6 +128,57 @@ function Compiler:statement(statement)
         end
         local _, err, epos = self:path(head) if err then return nil, err, epos end
         writeCode(self.code, ByteCode.Call, 0, #args)
+    end
+    if statement.type == "repeat-node" then
+        local count, body = statement.count, statement.body
+        local typ, err, epos = self:expression(count) if err then return nil, err, epos end
+        local addr = self:currentPos()
+        local _, err, epos = self:statement(body) if err then return nil, err, epos end
+        writeCode(self.code, ByteCode.Number, 1)
+        writeCode(self.code, ByteCode.Sub)
+        writeCode(self.code, ByteCode.Copy)
+        writeCode(self.code, ByteCode.Number, 0)
+        writeCode(self.code, ByteCode.LE)
+        writeCode(self.code, ByteCode.JumpIfNot, addr)
+    end
+    if statement.type == "if-node" then
+        local conds, cases, elseCase = statement.conds, statement.cases, statement.elseCase
+        local addExitAddrQueue = {}
+        for i = 1, #conds do
+            local cond, case = conds[i], cases[i]
+            local typ, err, epos = self:expression(cond) if err then return nil, err, epos end
+            local bodyAddr = self:currentPos()
+            writeCode(self.code, ByteCode.None) -- placeholder
+            local _, err, epos = self:statement(case) if err then return nil, err, epos end
+            local exitAddr = self:currentPos()
+            overwriteCode(self.code, bodyAddr, ByteCode.JumpIfNot, exitAddr + INSTRUCTION_SIZE)
+            table.insert(addExitAddrQueue, self:currentPos())
+            writeCode(self.code, ByteCode.Jump)
+        end
+        if elseCase then
+            local _, err, epos = self:statement(elseCase) if err then return nil, err, epos end
+        end
+        local exitAddr = self:currentPos()
+        for _, addr in ipairs(addExitAddrQueue) do
+            self.code[addr + INSTRUCTION_ADDR_OFFSET] = exitAddr
+        end
+    end
+    if statement.type == "while-node" then
+        local cond, body = statement.cond, statement.body
+        local condAddr = self:currentPos()
+        local typ, err, epos = self:expression(cond) if err then return nil, err, epos end
+        local bodyAddr = self:currentPos()
+        writeCode(self.code, ByteCode.None) -- placeholder
+        local _, err, epos = self:statement(body) if err then return nil, err, epos end
+        local exitAddr = self:currentPos()
+        writeCode(self.code, ByteCode.Jump, condAddr)
+        overwriteCode(self.code, bodyAddr, ByteCode.JumpIfNot, exitAddr + INSTRUCTION_SIZE * 2)
+    end
+    if statement.type == "wait-node" then
+        local cond = statement.cond
+        local addr = self:currentPos()
+        local typ, err, epos = self:expression(cond) if err then return nil, err, epos end
+        writeCode(self.code, ByteCode.JumpIfNot, addr)
     end
 end
 ---@param self Compiler
@@ -175,20 +261,20 @@ Compiler.optimisations = {
     count = function (self)
         local ip = 1
         while ip <= #self.code do
-            local instr1, addr1, count1 = self.code[ip], self.code[ip + 1], self.code[ip + 2]
-            ip = ip + 3
+            local instr1, addr1, count1 = self.code[ip], self.code[ip + INSTRUCTION_ADDR_OFFSET], self.code[ip + INSTRUCTION_COUNT_OFFSET]
+            ip = ip + INSTRUCTION_SIZE
             if instr1 ~= ByteCode.Call and instr1 ~= ByteCode.CreateTable then
-                local instr2, addr2, count2 = self.code[ip], self.code[ip + 1], self.code[ip + 2]
+                local instr2, addr2, count2 = self.code[ip], self.code[ip + INSTRUCTION_ADDR_OFFSET], self.code[ip + INSTRUCTION_COUNT_OFFSET]
                 if instr1 == instr2 and addr1 == addr2 then
                     local newCount = count1 + count2
                     while instr1 == instr2 and addr1 == addr2 do
                         table.remove(self.code, ip) table.remove(self.code, ip) table.remove(self.code, ip) -- remove instruction
-                        instr2, addr2, count2 = self.code[ip], self.code[ip + 1], self.code[ip + 2]
+                        instr2, addr2, count2 = self.code[ip], self.code[ip + INSTRUCTION_ADDR_OFFSET], self.code[ip + INSTRUCTION_COUNT_OFFSET]
                         newCount = newCount + count2
                     end
-                    ip = ip - 3
-                    self.code[ip], self.code[ip + 1], self.code[ip + 2] = instr1, addr1, newCount
-                    ip = ip + 3
+                    ip = ip - INSTRUCTION_SIZE
+                    self.code[ip], self.code[ip + INSTRUCTION_ADDR_OFFSET], self.code[ip + INSTRUCTION_COUNT_OFFSET] = instr1, addr1, newCount
+                    ip = ip + INSTRUCTION_SIZE
                 end
             end
         end
@@ -197,15 +283,15 @@ Compiler.optimisations = {
     jumpNegation = function (self)
         local ip = 1
         while ip <= #self.code do
-            local instr1, _, count1 = self.code[ip], self.code[ip + 1], self.code[ip + 2]
-            ip = ip + 3
+            local instr1, _, count1 = self.code[ip], self.code[ip + INSTRUCTION_ADDR_OFFSET], self.code[ip + INSTRUCTION_COUNT_OFFSET]
+            ip = ip + INSTRUCTION_SIZE
             if instr1 == ByteCode.Not and count1 == 1 then
-                local instr2, addr = self.code[ip], self.code[ip + 1]
+                local instr2, addr = self.code[ip], self.code[ip + INSTRUCTION_ADDR_OFFSET]
                 if instr2 == ByteCode.JumpIfNot then
-                    ip = ip - 3
+                    ip = ip - INSTRUCTION_SIZE
                     table.remove(self.code, ip) table.remove(self.code, ip) table.remove(self.code, ip)
-                    self.code[ip], self.code[ip + 1], self.code[ip + 2] = ByteCode.JumpIf, addr, 0
-                    ip = ip + 3
+                    self.code[ip], self.code[ip + INSTRUCTION_ADDR_OFFSET], self.code[ip + INSTRUCTION_COUNT_OFFSET] = ByteCode.JumpIf, addr, 0
+                    ip = ip + INSTRUCTION_SIZE
                 end
             end
         end

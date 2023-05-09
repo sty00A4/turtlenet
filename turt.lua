@@ -1,3 +1,7 @@
+if term then
+    term.clear()
+    term.setCursorPos(1, 1)
+end
 local turtlenet = require "turtlenet"
 
 local args = {...}

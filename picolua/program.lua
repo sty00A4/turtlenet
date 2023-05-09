@@ -55,7 +55,7 @@ end
 ---@param self Program
 function Program:pop()
     local value = table.remove(self.stack)
-    if not value then error "stack underflow" end
+    if not value then error("stack underflow", 2) end
     return value.value
 end
 ---@param self Program
@@ -75,7 +75,8 @@ end
 ---@param self Program
 function Program:run()
     while self.ip <= #self.code do
-        local instr, addr, count = self.code[self.ip], self.code[self.ip + 1], self.code[self.ip + 2]
+        local instr, addr, count = self.code[self.ip], self.code[self.ip + INSTRUCTION_ADDR_OFFSET], self.code[self.ip + INSTRUCTION_COUNT_OFFSET]
+        
         if instr == ByteCode.Halt then
             break
         elseif instr == ByteCode.Jump then
@@ -83,44 +84,60 @@ function Program:run()
         elseif instr == ByteCode.JumpIf then
             if self:pop() then
                 self.ip = addr
+            else
+                self.ip = self.ip + INSTRUCTION_SIZE
             end
         elseif instr == ByteCode.JumpIfNot then
             if not self:pop() then
                 self.ip = addr
+            else
+                self.ip = self.ip + INSTRUCTION_SIZE
             end
         elseif instr == ByteCode.Return then
-            if not self:returnAddr() then
+            local addr = self:returnAddr()
+            if addr then
                 self.ip = addr
+            else
+                return nil, "no where to return to"
             end
         elseif instr == ByteCode.Get then
             local key = self:const(addr)
             for _ = 1, count do
                 self:push(_G[key])
             end
+            self.ip = self.ip + INSTRUCTION_SIZE
         elseif instr == ByteCode.Set then
             local key = self:const(addr)
             for _ = 1, count do
                 _G[key] = self:pop()
             end
+            self.ip = self.ip + INSTRUCTION_SIZE
         --- todo: Field and Index
-        elseif instr == ByteCode.Call then
+        elseif instr == ByteCode.Call or instr == ByteCode.CallReturn then
             local func = self:pop()
             local args = {}
             for _ = 1, count do
                 table.insert(args, self:pop())
             end
             local returns = { func(table.unpack(args)) }
-            for _, value in ipairs(returns) do
-                self:push(value)
+            if instr == ByteCode.CallReturn then
+                for _, value in ipairs(returns) do
+                    self:push(value)
+                end
             end
+            self.ip = self.ip + INSTRUCTION_SIZE
         elseif instr == ByteCode.Nil then
             self:push()
+            self.ip = self.ip + INSTRUCTION_SIZE
         elseif instr == ByteCode.Number then
             self:push(addr)
+            self.ip = self.ip + INSTRUCTION_SIZE
         elseif instr == ByteCode.Boolean then
             self:push(addr == 1 and true or false)
+            self.ip = self.ip + INSTRUCTION_SIZE
         elseif instr == ByteCode.String then
             self:push(self:const(addr))
+            self.ip = self.ip + INSTRUCTION_SIZE
         elseif instr == ByteCode.Add then
             local right, left = self:pop(), self:pop()
             local success, value = pcall(function()
@@ -128,6 +145,7 @@ function Program:run()
             end)
             if not success then return nil, value end
             self:push(value)
+            self.ip = self.ip + INSTRUCTION_SIZE
         elseif instr == ByteCode.Sub then
             local right, left = self:pop(), self:pop()
             local success, value = pcall(function()
@@ -135,6 +153,7 @@ function Program:run()
             end)
             if not success then return nil, value end
             self:push(value)
+            self.ip = self.ip + INSTRUCTION_SIZE
         elseif instr == ByteCode.Mul then
             local right, left = self:pop(), self:pop()
             local success, value = pcall(function()
@@ -142,6 +161,7 @@ function Program:run()
             end)
             if not success then return nil, value end
             self:push(value)
+            self.ip = self.ip + INSTRUCTION_SIZE
         elseif instr == ByteCode.Div then
             local right, left = self:pop(), self:pop()
             local success, value = pcall(function()
@@ -149,6 +169,7 @@ function Program:run()
             end)
             if not success then return nil, value end
             self:push(value)
+            self.ip = self.ip + INSTRUCTION_SIZE
         elseif instr == ByteCode.Mod then
             local right, left = self:pop(), self:pop()
             local success, value = pcall(function()
@@ -156,6 +177,7 @@ function Program:run()
             end)
             if not success then return nil, value end
             self:push(value)
+            self.ip = self.ip + INSTRUCTION_SIZE
         elseif instr == ByteCode.Pow then
             local right, left = self:pop(), self:pop()
             local success, value = pcall(function()
@@ -163,6 +185,7 @@ function Program:run()
             end)
             if not success then return nil, value end
             self:push(value)
+            self.ip = self.ip + INSTRUCTION_SIZE
         elseif instr == ByteCode.EQ then
             local right, left = self:pop(), self:pop()
             local success, value = pcall(function()
@@ -170,6 +193,7 @@ function Program:run()
             end)
             if not success then return nil, value end
             self:push(value)
+            self.ip = self.ip + INSTRUCTION_SIZE
         elseif instr == ByteCode.NE then
             local right, left = self:pop(), self:pop()
             local success, value = pcall(function()
@@ -177,6 +201,7 @@ function Program:run()
             end)
             if not success then return nil, value end
             self:push(value)
+            self.ip = self.ip + INSTRUCTION_SIZE
         elseif instr == ByteCode.LT then
             local right, left = self:pop(), self:pop()
             local success, value = pcall(function()
@@ -184,6 +209,7 @@ function Program:run()
             end)
             if not success then return nil, value end
             self:push(value)
+            self.ip = self.ip + INSTRUCTION_SIZE
         elseif instr == ByteCode.GT then
             local right, left = self:pop(), self:pop()
             local success, value = pcall(function()
@@ -191,6 +217,7 @@ function Program:run()
             end)
             if not success then return nil, value end
             self:push(value)
+            self.ip = self.ip + INSTRUCTION_SIZE
         elseif instr == ByteCode.LE then
             local right, left = self:pop(), self:pop()
             local success, value = pcall(function()
@@ -198,6 +225,7 @@ function Program:run()
             end)
             if not success then return nil, value end
             self:push(value)
+            self.ip = self.ip + INSTRUCTION_SIZE
         elseif instr == ByteCode.GE then
             local right, left = self:pop(), self:pop()
             local success, value = pcall(function()
@@ -205,6 +233,7 @@ function Program:run()
             end)
             if not success then return nil, value end
             self:push(value)
+            self.ip = self.ip + INSTRUCTION_SIZE
         elseif instr == ByteCode.And then
             local right, left = self:pop(), self:pop()
             local success, value = pcall(function()
@@ -212,6 +241,7 @@ function Program:run()
             end)
             if not success then return nil, value end
             self:push(value)
+            self.ip = self.ip + INSTRUCTION_SIZE
         elseif instr == ByteCode.Or then
             local right, left = self:pop(), self:pop()
             local success, value = pcall(function()
@@ -219,6 +249,7 @@ function Program:run()
             end)
             if not success then return nil, value end
             self:push(value)
+            self.ip = self.ip + INSTRUCTION_SIZE
         elseif instr == ByteCode.Neg then
             local right = self:pop()
             local success, value = pcall(function()
@@ -226,6 +257,7 @@ function Program:run()
             end)
             if not success then return nil, value end
             self:push(value)
+            self.ip = self.ip + INSTRUCTION_SIZE
         elseif instr == ByteCode.Not then
             local right = self:pop()
             local success, value = pcall(function()
@@ -233,8 +265,18 @@ function Program:run()
             end)
             if not success then return nil, value end
             self:push(value)
+            self.ip = self.ip + INSTRUCTION_SIZE
+        elseif instr == ByteCode.Copy then
+            local value = self:pop()
+            self:push(value)
+            self:push(value)
+            self.ip = self.ip + INSTRUCTION_SIZE
+        elseif instr == ByteCode.Swap then
+            local b, a = self:pop(), self:pop()
+            self:push(b)
+            self:push(a)
+            self.ip = self.ip + INSTRUCTION_SIZE
         end
-        self.ip = self.ip + 3
     end
 end
 
