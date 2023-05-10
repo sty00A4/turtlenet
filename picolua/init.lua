@@ -106,6 +106,7 @@ local function debug(path)
         while true do
             drawInstr()
             drawStack()
+            ---@diagnostic disable-next-line: undefined-field
             local _, key = os.pullEvent("key")
             if key == keys.space then break end
         end
