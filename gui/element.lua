@@ -1,3 +1,11 @@
+local ElementPositionMeta = { __name = "ElementPosition" }
+local ElementPosition = {
+    ---@class ElementPosition
+    absolute = setmetatable({}, ElementPositionMeta),
+    ---@class ElementPosition
+    relative = setmetatable({}, ElementPositionMeta),
+}
+
 ---@param level integer
 ---@param value any
 ---@param name string
@@ -61,6 +69,17 @@ local function checkTable(level, value, name, keys, valueFunc, ...)
     end
 end
 
+---@param position ElementPosition
+---@param x integer
+---@param y integer
+local function absolutePosition(position, x, y)
+    local W, H = term.getSize()
+    if position == ElementPosition.relative then
+        x, y = W * x, H * y
+    end
+    return x, y
+end
+
 local Element = {
     mt = {
         __name = "element"
@@ -70,9 +89,11 @@ local Element = {
 ---@return Element
 function Element.new(opts)
     opts.x = opts.x or 1.
-    checkType(opts.x, "x", "number")
+    checkType(2, opts.x, "x", "number")
     opts.y = opts.y or 1.
-    checkType(opts.y, "y", "number")
+    checkType(2, opts.y, "y", "number")
+    opts.position = opts.position or ElementPosition.absolute
+    checkMetaName(2, opts.position, "position", "ElementPosition")
 
     ---@param self Element
     ---@param page GUI
@@ -96,9 +117,11 @@ function Element.new(opts)
 end
 
 return {
+    ElementPosition = ElementPosition,
     Element = Element,
     checkType = checkType,
     checkMetaName = checkMetaName,
     checkValue = checkValue,
     checkTable = checkTable,
+    absolutePosition = absolutePosition,
 }

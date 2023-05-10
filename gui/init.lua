@@ -69,7 +69,7 @@ return {
             button.Button.new {
                 x = 1, y = 1,
                 label = "click",
-                fg = colors.green
+                color = colors.green
             }
         }
         page:run()
