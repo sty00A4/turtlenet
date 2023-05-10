@@ -3,6 +3,8 @@ TokenKind = {
     ---@class TokenKind
     ID = {},
     ---@class TokenKind
+    Nil = {},
+    ---@class TokenKind
     Number = {},
     ---@class TokenKind
     Boolean = {},
@@ -90,6 +92,9 @@ TokenKind = {
     ---@return TokenKind, any
     fromWord = function(id)
         local kw = {
+            ["nil"] = function()
+                return TokenKind.Nil
+            end,
             ["true"] = function()
                 return TokenKind.Boolean, true
             end,
@@ -145,6 +150,8 @@ TokenKind = {
     tostring = function (kind)
         if kind == TokenKind.ID then
             return "id"
+        elseif kind == TokenKind.Nil then
+            return "nil"
         elseif kind == TokenKind.Number then
             return "number"
         elseif kind == TokenKind.Boolean then

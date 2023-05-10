@@ -70,6 +70,28 @@ end
 
 ---@alias PathNode FieldNode|IndexNode|IDNode
 
+local NilNode = {
+    mt = {
+        __name = "nil-node",
+        ---@param self NilNode
+        __tostring = function (self)
+            return "nil"
+        end
+    }
+}
+---@param value number
+---@param pos Position
+---@return NilNode
+function NilNode.new(value, pos)
+    return setmetatable(
+        ---@class NilNode
+        {
+            type = NilNode.mt.__name,
+            value = value, pos = pos,
+        },
+        NilNode.mt
+    )
+end
 local NumberNode = {
     mt = {
         __name = "number-node",

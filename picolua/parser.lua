@@ -274,6 +274,10 @@ function Parser:expression()
         return self:path()
     end
     local pos = token.pos
+    if token.kind == TokenKind.Nil then
+        self:advance()
+        return nodes.NilNode.new(pos)
+    end
     if token.kind == TokenKind.Number then
         self:advance()
         return nodes.NumberNode.new(token.value, pos)

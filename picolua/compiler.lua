@@ -190,6 +190,10 @@ function Compiler:expression(expression)
         ---@diagnostic disable-next-line: assign-type-mismatch
         local value = expression.value
         writeCode(self.code, expression.pos.ln.start, expression.pos.col.start, ByteCode.Number, value)
+    elseif expression.type == "nil-node" then
+        ---@type number
+        ---@diagnostic disable-next-line: assign-type-mismatch
+        writeCode(self.code, expression.pos.ln.start, expression.pos.col.start, ByteCode.Nil)
     elseif expression.type == "boolean-node" then
         ---@type boolean
         ---@diagnostic disable-next-line: assign-type-mismatch
