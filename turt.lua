@@ -45,6 +45,8 @@ elseif args[1] == "picolua" then
         end
         if type(value) ~= "nil" then print(value) end
     end
+elseif args[1] == "gui" then
+    return turtlenet.gui.test()
 elseif args[1] == nil then
     print "USAGE:"
     print "  turt server - starts as a server"
