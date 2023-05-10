@@ -56,6 +56,7 @@ local ByteCode = {
     
     Copy = 0x60,
     Swap = 0x61,
+    Drop = 0x62,
 }
 
 ---@param code Code

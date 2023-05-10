@@ -136,6 +136,7 @@ function Compiler:statement(statement)
         writeCode(self.code, statement.pos.ln.start, statement.pos.col.start, ByteCode.Number, 0)
         writeCode(self.code, statement.pos.ln.start, statement.pos.col.start, ByteCode.LE)
         writeCode(self.code, statement.pos.ln.start, statement.pos.col.start, ByteCode.JumpIfNot, addr)
+        writeCode(self.code, statement.pos.ln.start, statement.pos.col.start, ByteCode.Drop)
     end
     if statement.type == "if-node" then
         local conds, cases, elseCase = statement.conds, statement.cases, statement.elseCase

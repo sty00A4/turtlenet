@@ -15,6 +15,13 @@ elseif args[1] == "client" then
     if not id then print("expected the server's ID as a number, got \""..idString.."\"") return end
     return turtlenet.client.start(id)
 elseif args[1] == "picolua" then
+    if args[2] == "debug" then
+        local path = args[3] if not path then
+            print "expected path after \"picolua debug\""
+            return
+        end
+        return turtlenet.picolua.debug(path)
+    end
     local path = args[2] if not path then
         print "expected path after \"picolua\""
         return
