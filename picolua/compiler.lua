@@ -126,6 +126,15 @@ function Compiler:statement(statement)
         writeCode(self.code, statement.pos.ln.start, statement.pos.col.start, ByteCode.Call, 0, #args)
     end
     if statement.type == "repeat-node" then
+        --       [count]
+        -- @body [body]
+        --       NUMBER 1        // count - 1
+        --       SUB
+        --       COPY
+        --       NUMBER 0        // count <= 0
+        --       LE
+        --       JUMPIFNOT @body
+        --       DROP            // drop count
         local count, body = statement.count, statement.body
         local typ, err, epos = self:expression(count) if err then return nil, err, epos end
         local addr = self:currentPos()
@@ -139,6 +148,14 @@ function Compiler:statement(statement)
         writeCode(self.code, statement.pos.ln.start, statement.pos.col.start, ByteCode.Drop)
     end
     if statement.type == "if-node" then
+        --       (conds, cases) {
+        --         [cond]
+        --         JUMPIFNOT @next
+        --         [body]
+        --         JUMP @exit
+        -- @next }
+        --       [elseCase]
+        -- @exit
         local conds, cases, elseCase = statement.conds, statement.cases, statement.elseCase
         local addExitAddrQueue = {}
         for i = 1, #conds do
@@ -161,6 +178,11 @@ function Compiler:statement(statement)
         end
     end
     if statement.type == "while-node" then
+        -- @cond [cond]
+        --       JUMPIFNOT @exit
+        -- @body [body]
+        --       JUMP @cond
+        -- @exit
         local cond, body = statement.cond, statement.body
         local condAddr = self:currentPos()
         local typ, err, epos = self:expression(cond) if err then return nil, err, epos end
@@ -172,6 +194,8 @@ function Compiler:statement(statement)
         overwriteCode(self.code, bodyAddr, statement.pos.ln.start, statement.pos.col.start, ByteCode.JumpIfNot, exitAddr + INSTRUCTION_SIZE * 2)
     end
     if statement.type == "wait-node" then
+        -- @cond [cond]
+        --       JUMPIFNOT @cond
         local cond = statement.cond
         local addr = self:currentPos()
         local typ, err, epos = self:expression(cond) if err then return nil, err, epos end
