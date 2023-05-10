@@ -379,6 +379,8 @@ end
 
 return {
     Program = Program,
+    Value = Value,
+    fromLuaError = fromLuaError,
     ---@param file File
     ---@param compiler Compiler
     run = function (file, compiler)

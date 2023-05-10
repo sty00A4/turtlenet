@@ -308,6 +308,7 @@ Compiler.optimisations = {
 return {
     Compiler = Compiler,
     writeCode = writeCode,
+    overwriteCode = overwriteCode,
     ---@param file File
     ---@param ast ChunkNode
     compile = function (file, ast)
@@ -315,5 +316,5 @@ return {
         local _, err, epos = compiler:chunk(ast) if err then return nil, err, epos end
         compiler.optimisations.count(compiler)
         return compiler
-    end
+    end,
 }
