@@ -57,7 +57,6 @@ local function debug(path)
     local codeOffset = 0
     local W, H = term.getSize()
     local function drawInstr()
-        offset = offset or 0
         for i = 0, H - 2 do
             term.setCursorPos(1, i + 1)
             local ip = (i + codeOffset) * INSTRUCTION_SIZE + 1

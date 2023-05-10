@@ -86,6 +86,7 @@ end
 
 ---@param self Server
 function Server:listen()
+    ---@diagnostic disable-next-line: undefined-field
     local name = "Server#"..tostring(os.getComputerID())
     rednet.host(NET_PROTOCOL, name)
     self.running = true
@@ -132,6 +133,7 @@ function Server:eventListener()
     term.clear()
     term.setCursorPos(1, 1)
     while true do
+        ---@diagnostic disable-next-line: undefined-field
         table.insert(self.events, { os.pullEvent() })
     end
 end
