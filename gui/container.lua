@@ -8,32 +8,35 @@ local Container = {
         window = {},
         ---@param self Container
         ---@param page GUI
-        update = function (self, page)
+        ---@param window table|nil
+        update = function (self, page, window)
             local back = term.current()
             term.redirect(self.window)
             for _, element in pairs(self.elements) do
-                element:update(page)
+                element:update(page, window)
             end
             term.redirect(back)
         end,
         ---@param self Container
         ---@param page GUI
-        draw = function (self, page)
+        ---@param window table|nil
+        draw = function (self, page, window)
             local back = term.current()
             term.redirect(self.window)
             for _, element in pairs(self.elements) do
-                element:draw(page)
+                element:draw(page, window)
             end
             term.redirect(back)
         end,
         ---@param self Container
         ---@param page GUI
         ---@param events table<integer, any>
-        event = function (self, page, events)
+        ---@param window table|nil
+        event = function (self, page, events, window)
             local back = term.current()
             term.redirect(self.window)
             for _, element in pairs(self.elements) do
-                element:event(page, events)
+                element:event(page, events, window)
             end
             term.redirect(back)
         end,

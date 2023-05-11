@@ -10,7 +10,8 @@ local Text = {
         bg = colors.black,
         ---@param self AnyElement
         ---@param page GUI
-        draw = function (self, page)
+        ---@param window table|nil
+        draw = function (self, page, window)
             local cx, cy = term.getCursorPos()
             local fg, bg = term.getTextColor(), term.getBackgroundColor()
             local x, y = element.absolutePosition(self.position, self.x, self.y)

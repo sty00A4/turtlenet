@@ -129,20 +129,30 @@ local Element = {
         transform = ElementTransfrom.absolute,
         ---@param self AnyElement
         ---@param page GUI
-        draw = function (self, page) end,
+        ---@param window table|nil
+        draw = function (self, page, window) end,
         ---@param self AnyElement
         ---@param page GUI
-        update = function (self, page) end,
+        ---@param window table|nil
+        update = function (self, page, window) end,
         ---@param self AnyElement
         ---@param page GUI
+        ---@param window table|nil
         ---@param events table<integer, any>
-        event = function (self, page, events) end,
+        event = function (self, page, events, window) end,
         ---@param self AnyElement
         ---@param mx integer
         ---@param my integer
+        ---@param window table|nil
         ---@return boolean
-        mouseOver = function (self, mx, my)
+        mouseOver = function (self, mx, my, window)
+            local offsetX, offsetY = 0, 0
+            if window and self.label == "OK" then
+                offsetX, offsetY = window.getPosition()
+                offsetX, offsetY = offsetX - 1, offsetY - 1
+            end
             local x, y = absolutePosition(self.position, self.x, self.y)
+            x, y = x + offsetX, y + offsetY
             local w, h = absoluteTransform(self.transform, self.w, self.h)
             return (mx >= x and mx <= x + w - 1) and (my >= y and my <= y + h - 1)
         end,

@@ -9,16 +9,19 @@ local Button = {
         braces = "[]",
         ---@param self AnyElement
         ---@param page GUI
-        onClick = function (self, page) end,
+        ---@param window table|nil
+        onClick = function (self, page, window) end,
         ---@param self AnyElement
         ---@param page GUI
-        update = function (self, page)
-            self.w = #self.label
+        ---@param window table|nil
+        update = function (self, page, window)
+            self.w = #self.label + 2
             self.h = 1
         end,
         ---@param self AnyElement
         ---@param page GUI
-        draw = function (self, page)
+        ---@param window table|nil
+        draw = function (self, page, window)
             local cx, cy = term.getCursorPos()
             local fg, bg = term.getTextColor(), term.getBackgroundColor()
             local x, y = element.absolutePosition(self.position, self.x, self.y)
@@ -37,13 +40,14 @@ local Button = {
         ---@param self AnyElement
         ---@param page GUI
         ---@param events table<integer, any>
-        event = function (self, page, events)
+        ---@param window table|nil
+        event = function (self, page, events, window)
             local event, mb, mx, my = events[1], events[2], events[3], events[4]
             if event == "mouse_click" then
                 if mb == 1 then
-                    if self:mouseOver(mx, my) then
+                    if self:mouseOver(mx, my, window) then
                         if type(self.onClick) == "function" then
-                            return self:onClick(page)
+                            return self:onClick(page, window)
                         end
                     end
                 end

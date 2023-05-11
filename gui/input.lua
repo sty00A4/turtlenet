@@ -12,7 +12,8 @@ local Input = {
         bg = colors.gray,
         ---@param self AnyElement
         ---@param page GUI
-        update = function (self, page)
+        ---@param window table|nil
+        update = function (self, page, window)
             if self.focused then
                 local x, y = element.absolutePosition(self.position, self.x, self.y)
                 local w, h = element.absoluteTransform(self.transform, self.w, self.h)
@@ -22,7 +23,8 @@ local Input = {
         end,
         ---@param self AnyElement
         ---@param page GUI
-        draw = function (self, page)
+        ---@param window table|nil
+        draw = function (self, page, window)
             local cx, cy = term.getCursorPos()
             local fg, bg = term.getTextColor(), term.getBackgroundColor()
             local x, y = element.absolutePosition(self.position, self.x, self.y)
@@ -51,12 +53,13 @@ local Input = {
         ---@param self AnyElement
         ---@param page GUI
         ---@param events table<integer, any>
-        event = function (self, page, events)
+        ---@param window table|nil
+        event = function (self, page, events, window)
             local event, p1, p2, p3 = events[1], events[2], events[3], events[4]
             if event == "mouse_click" then
                 local mb, mx, my = p1, p2, p3
                 if mb == 1 then
-                    self.focused = self:mouseOver(mx, my)
+                    self.focused = self:mouseOver(mx, my, window)
                 end
             end
             if event == "char" then
