@@ -109,10 +109,10 @@ local Element = {
         position = ElementPosition.absolute,
         ---@param self Button|Element
         ---@param page GUI
-        update = function (self, page) end,
+        draw = function (self, page) end,
         ---@param self Button|Element
         ---@param page GUI
-        draw = function (self, page) end,
+        update = function (self, page) end,
         ---@param self Button|Element
         ---@param page GUI
         ---@param events table<integer, any>
@@ -122,12 +122,12 @@ local Element = {
         x = { value = "number", type = "type" },
         y = { value = "number", type = "type" },
         position = { value = "ElementPosition", type = "meta" },
-        update = { value = "function", type = "type" },
         draw = { value = "function", type = "type" },
+        update = { value = "function", type = "type" },
         event = { value = "function", type = "type" },
     },
     mt = {
-        __name = "element"
+        __name = "Element"
     }
 }
 ---@param opts Element
@@ -146,8 +146,8 @@ end
 ---@param std table<string, any>
 ---@param types table<string, table>
 local function checkOptsElement(level, opts, std, types)
-    checkOpts(level + 1, opts, Element.std, Element.types)
     checkOpts(level + 1, opts, std, types)
+    checkOpts(level + 1, opts, Element.std, Element.types)
 end
 
 return {

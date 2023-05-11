@@ -9,7 +9,7 @@ local GUI = {
         __name = "gui"
     }
 }
----@param elements table<integer|string, Element>
+---@param elements table<integer|string, Element|Button>
 ---@return GUI
 function GUI.new(elements)
     element.checkTable(2, elements, "elements", {"number", "string"}, element.checkMetaName, "Element")
@@ -68,8 +68,11 @@ return {
         local page = GUI.new {
             button.Button.new {
                 x = 1, y = 1,
-                label = "click",
-                color = colors.green
+                label = "exit",
+                color = colors.red,
+                onClick = function (self, page)
+                    error "clicked"
+                end
             }
         }
         page:run()

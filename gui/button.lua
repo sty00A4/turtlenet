@@ -5,6 +5,7 @@ local Button = {
     std = {
         label = "button",
         color = colors.white,
+        braceColor = colors.gray,
         braces = "[]",
         ---@param self Button|Element
         ---@param page GUI
@@ -12,8 +13,20 @@ local Button = {
         ---@param self Button|Element
         ---@param page GUI
         draw = function (self, page)
+            local cx, cy = term.getCursorPos()
+            local fg, bg = term.getTextColor(), term.getBackgroundColor()
             local x, y = element.absolutePosition(self.position, self.x, self.y)
             term.setCursorPos(x, y)
+            term.setTextColor(self.braceColor)
+            term.write(self.braces:sub(1, 1))
+            term.setTextColor(self.color)
+            term.write(self.label)
+            term.setTextColor(self.braceColor)
+            term.write(self.braces:sub(2, 2))
+
+            term.setCursorPos(cx, cy)
+            term.setTextColor(fg)
+            term.setBackgroundColor(bg)
         end,
         ---@param self Button|Element
         ---@param page GUI
@@ -41,20 +54,21 @@ local Button = {
     },
     types = {
         label = { value = "string", type = "type" },
-        colors = { value = "integer", type = "type" },
+        colors = { value = "number", type = "type" },
+        braceColor = { value = "number", type = "type" },
         braces = { value = "string", type = "type" },
         onClick = { value = "function", type = "type" },
         draw = { value = "function", type = "type" },
         event = { value = "function", type = "type" },
         mouseOver = { value = "function", type = "type" },
     },
+    mt = {
+        __name = "Button"
+    }
 }
 ---@param opts any
----@return Button
 function Button.new(opts)
     element.checkOptsElement(2, opts, Button.std, Button.types)
-    ---@type Button
-    ---@diagnostic disable-next-line: assign-type-mismatch
     local button = element.Element.new(opts)
     return button
 end
