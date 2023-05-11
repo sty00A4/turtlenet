@@ -1,5 +1,8 @@
 local transform = require "turtlenet.apps.server.transform"
 
+---@alias ClientStatus "idle"|"task"
+---@alias Tasks table<integer, any>
+
 local Client = {
     mt = {
         __name = "client",
@@ -24,14 +27,23 @@ function Client.new(id, transform)
             id = id, transform = transform,
             
             tasks = {},
+            ---@type ClientStatus
+            status = "idle",
             ---@type table<integer, table>
             inventory = {}, fuel = 0,
 
             tostring = Client.mt.__tostring,
-            eq = Client.mt.__eq
+            eq = Client.mt.__eq,
+            gui = Client.gui,
         },
         Client.mt
     )
+end
+---@param self Client
+---@param server Server
+---@param window table
+function Client:gui(server, window)
+    
 end
 
 return {

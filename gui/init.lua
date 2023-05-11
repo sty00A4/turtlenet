@@ -3,8 +3,9 @@ local text = require "turtlenet.gui.text"
 local button = require "turtlenet.gui.button"
 local input = require "turtlenet.gui.input"
 local container = require "turtlenet.gui.container"
+local list = require "turtlenet.gui.list"
 
----@alias AnyElement Element|Button|Input|Text|Container
+---@alias AnyElement Element|Button|Input|Text|Container|List
 
 local GUI = {
     mt = {
@@ -86,6 +87,41 @@ function GUI:run(window)
 end
 
 local prompt = {}
+---@param msg string
+---@param width integer|nil
+---@param height integer|nil
+function prompt.info(msg, width, height)
+    local mainWindow = term.current()
+    local W, H = mainWindow.getSize()
+    width = width or #msg + 2
+    width = width >= 10 and width or 10
+    width = width <= W and width or W
+    height = height or 3
+    height = height >= 3 and height or 3
+    height = height <= H and height or H
+    local x, y = math.floor(W / 2 - width / 2), math.floor(H / 2 - height / 2)
+    local promptWindow = window.create(mainWindow, x, y, width, height)
+    term.redirect(promptWindow)
+    term.setBackgroundColor(colors.gray)
+    local page = GUI.new {
+        text.Text.new {
+            x = 2, y = 1, w = width - 2, h = height - 2,
+            text = msg
+        },
+        button.Button.new {
+            x = 1, y = height,
+            label = "OK", color = colors.green,
+            braceColor = colors.lightGray,
+            key = keys.enter,
+            onClick = function (self, page)
+                page.running = false
+            end
+        },
+    }
+    page:run(promptWindow)
+    term.redirect(mainWindow)
+    promptWindow.setVisible(false)
+end
 ---@param msg string
 ---@param width integer|nil
 ---@param height integer|nil
@@ -186,6 +222,7 @@ return {
     button = button,
     input = input,
     container = container,
+    list = list,
     prompt = prompt,
     test = function()
         term.clear()
@@ -202,21 +239,50 @@ return {
                 end
             },
             input.Input.new {
-                x = 1, y = 2,
+                x = 1, y = 3,
             },
             text.Text.new {
                 id = "text",
-                x = 1, y = 3,
+                x = 1, y = 5,
                 text = "this is a test",
                 w = 20
             },
             button.Button.new {
-                x = 1, y = 4,
+                x = 1, y = 6,
                 label = "change",
                 color = colors.yellow,
                 onClick = function (self, page)
                     page:getElementById("text").text = prompt.input("What is the text supposed to be?")
                 end
+            },
+            list.List.new {
+                list = {
+                    button.Button.new {
+                        label = "Banana",
+                        onClick = function (self)
+                            prompt.info(self.label)
+                        end
+                    },
+                    button.Button.new {
+                        label = "Apple",
+                        onClick = function (self)
+                            prompt.info(self.label)
+                        end
+                    },
+                    button.Button.new {
+                        label = "Melone",
+                        onClick = function (self)
+                            prompt.info(self.label)
+                        end
+                    },
+                    button.Button.new {
+                        label = "Pineapple",
+                        onClick = function (self)
+                            prompt.info(self.label)
+                        end
+                    },
+                },
+                x = 1, y = 8, h = 4,
             },
         }
         page:run()

@@ -9,11 +9,7 @@ if args[1] == "server" then
     return turtlenet.server.start()
 elseif args[1] == "client" then
     if not turtle then print "computer needs to be a turtle to be a client" return end
-    local idString = args[2]
-    if not idString then print "expected the server's ID after \"client\"" return end
-    local id = tonumber(idString)
-    if not id then print("expected the server's ID as a number, got \""..idString.."\"") return end
-    return turtlenet.client.start(id)
+    return turtlenet.client.start()
 elseif args[1] == "picolua" then
     if args[2] == "debug" then
         local path = args[3] if not path then

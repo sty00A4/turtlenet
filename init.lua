@@ -1,5 +1,6 @@
 NET_PROTOCOL = "turtlenet"
 SERVER_TIMEOUT = 0.5
+CLIENT_TIMEOUT = 5
 
 ---checks if `item` is contained in `t`
 ---@param t table
