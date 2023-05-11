@@ -6,10 +6,10 @@ local function download(path, prefix)
 end
 download "client/init.lua"
 download "gui/button.lua"
+download "gui/container.lua"
 download "gui/element.lua"
 download "gui/init.lua"
 download "gui/input.lua"
-download "gui/prompt.lua"
 download "gui/text.lua"
 download "picolua/bytecode.lua"
 download "picolua/compiler.lua"
