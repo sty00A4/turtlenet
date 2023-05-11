@@ -40,8 +40,8 @@ function string.sep(s, sep)
     return t
 end
 
-local server = require "turtlenet.server"
-local client = require "turtlenet.client"
+local server = require "turtlenet.apps.server"
+local client = require "turtlenet.apps.client"
 local picolua = require "turtlenet.picolua"
 local gui = require "turtlenet.gui"
 return {

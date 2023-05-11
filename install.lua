@@ -4,7 +4,11 @@ local function download(path, prefix)
     print("Downloading "..prefix..path..":")
     shell.run(("wget %s%s %s%s"):format(LINK, path, prefix, path))
 end
-download "client/init.lua"
+download "apps/client/init.lua"
+download "apps/server/client.lua"
+download "apps/server/init.lua"
+download "apps/server/log.lua"
+download "apps/server/transform.lua"
 download "gui/button.lua"
 download "gui/container.lua"
 download "gui/element.lua"
@@ -20,10 +24,6 @@ download "picolua/nodes.lua"
 download "picolua/parser.lua"
 download "picolua/program.lua"
 download "picolua/tokens.lua"
-download "server/client.lua"
-download "server/init.lua"
-download "server/log.lua"
-download "server/transform.lua"
 download ".gitignore"
 download "init.lua"
 download "install.lua"
