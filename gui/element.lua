@@ -80,7 +80,52 @@ local function absolutePosition(position, x, y)
     return x, y
 end
 
+---@param level integer
+---@param opts table<string, any>
+---@param std table<string, any>
+---@param types table<string, table>
+local function checkOpts(level, opts, std, types)
+    for k, v in pairs(std) do
+        opts[k] = type(opts[k]) ~= "nil" and opts[k] or v
+        local typ = types[k] or { type = "" }
+        if typ.type == "type" then
+            checkType(level + 1, opts[k], k, typ.value)
+        elseif typ.type == "meta" then
+            checkMetaName(level + 1, opts[k], k, typ.value)
+        elseif typ.type == "table" then
+            checkTable(level + 1, opts[k], k, typ.keys, typ.valueFunc, table.unpack(typ.values))
+        elseif typ.type == "value" then
+            checkValue(level + 1, opts[k], k, table.unpack(typ.values))
+        end
+    end
+end
+
+
 local Element = {
+    ---@class Element
+    std = {
+        x = 1.,
+        y = 1.,
+        position = ElementPosition.absolute,
+        ---@param self Button|Element
+        ---@param page GUI
+        update = function (self, page) end,
+        ---@param self Button|Element
+        ---@param page GUI
+        draw = function (self, page) end,
+        ---@param self Button|Element
+        ---@param page GUI
+        ---@param events table<integer, any>
+        event = function (self, page, events) end,
+    },
+    types = {
+        x = { value = "number", type = "type" },
+        y = { value = "number", type = "type" },
+        position = { value = "ElementPosition", type = "meta" },
+        update = { value = "function", type = "type" },
+        draw = { value = "function", type = "type" },
+        event = { value = "function", type = "type" },
+    },
     mt = {
         __name = "element"
     }
@@ -88,32 +133,21 @@ local Element = {
 ---@param opts Element
 ---@return Element
 function Element.new(opts)
-    opts.x = opts.x or 1.
-    checkType(2, opts.x, "x", "number")
-    opts.y = opts.y or 1.
-    checkType(2, opts.y, "y", "number")
-    opts.position = opts.position or ElementPosition.absolute
-    checkMetaName(2, opts.position, "position", "ElementPosition")
-
-    ---@param self Element
-    ---@param page GUI
-    opts.update = opts.update or function (self, page) end
-    checkType(2, opts.update, "update", "function")
-    ---@param self Element
-    ---@param page GUI
-    opts.draw = opts.draw or function (self, page) end
-    checkType(2, opts.draw, "draw", "function")
-    ---@param self Element
-    ---@param page GUI
-    ---@param events table
-    opts.event = opts.event or function (self, page, events) end
-    checkType(2, opts.event, "event", "function")
+    checkOpts(3, opts, Element.std, Element.types)
 
     return setmetatable(
-        ---@class Element
         opts,
         Element.mt
     )
+end
+
+---@param level integer
+---@param opts table<string, any>
+---@param std table<string, any>
+---@param types table<string, table>
+local function checkOptsElement(level, opts, std, types)
+    checkOpts(level + 1, opts, Element.std, Element.types)
+    checkOpts(level + 1, opts, std, types)
 end
 
 return {
@@ -124,4 +158,6 @@ return {
     checkValue = checkValue,
     checkTable = checkTable,
     absolutePosition = absolutePosition,
+    checkOpts = checkOpts,
+    checkOptsElement = checkOptsElement,
 }
