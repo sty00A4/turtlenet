@@ -22,8 +22,10 @@ local Button = {
             local event, mb, mx, my = events[1], events[2], events[3], events[4]
             if event == "mouse_click" then
                 if mb == 1 then
-                    if type(self.onClick) == "function" then
-                        return self:onClick(page)
+                    if self:mouseOver(mx, my) then
+                        if type(self.onClick) == "function" then
+                            return self:onClick(page)
+                        end
                     end
                 end
             end
