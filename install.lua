@@ -25,7 +25,9 @@ download "server/init.lua"
 download "server/log.lua"
 download "server/transform.lua"
 download "init.lua"
+download "install.lua"
 download "LICENSE"
 download "README.md"
+download "turt.lua"
 
 download("turt.lua", "")
