@@ -92,6 +92,7 @@ function prompt.confirm(msg, width, height)
             x = 1, y = height,
             label = "OK", color = colors.green,
             braceColor = colors.lightGray,
+            key = keys.enter,
             onClick = function (self, page)
                 confirm = true
                 page.running = false
@@ -101,6 +102,7 @@ function prompt.confirm(msg, width, height)
             x = 5, y = height,
             label = "CANCEL", color = colors.red,
             braceColor = colors.lightGray,
+            key = keys.leftCtrl,
             onClick = function (self, page)
                 confirm = false
                 page.running = false
@@ -130,7 +132,7 @@ return {
                 color = colors.red,
                 onClick = function (self, page)
                     if prompt.confirm("Are you sure you wanna exit?") then
-                        error "exited"
+                        page.running = false
                     end
                 end
             },
@@ -144,6 +146,8 @@ return {
             }
         }
         page:run()
+        term.clear()
+        term.setCursorPos(1, 1)
     end,
     GUI = GUI,
 }

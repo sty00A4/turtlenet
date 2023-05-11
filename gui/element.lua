@@ -107,6 +107,8 @@ local function checkOpts(level, opts, std, types)
         local typ = types[k] or { type = "" }
         if typ.type == "type" then
             checkType(level + 1, opts[k], k, typ.value)
+        elseif typ.type == "types" then
+            checkType(level + 1, opts[k], k, table.unpack(typ.values))
         elseif typ.type == "meta" then
             checkMetaName(level + 1, opts[k], k, typ.value)
         elseif typ.type == "table" then

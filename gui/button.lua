@@ -7,6 +7,8 @@ local Button = {
         color = colors.white,
         braceColor = colors.gray,
         braces = "[]",
+        ---@type integer|nil
+        key = nil,
         ---@param self AnyElement
         ---@param page GUI
         ---@param window table|nil
@@ -42,13 +44,22 @@ local Button = {
         ---@param events table<integer, any>
         ---@param window table|nil
         event = function (self, page, events, window)
-            local event, mb, mx, my = events[1], events[2], events[3], events[4]
+            local event, p1, p2, p3 = events[1], events[2], events[3], events[4]
             if event == "mouse_click" then
+                local mb, mx, my = p1, p2, p3
                 if mb == 1 then
                     if self:mouseOver(mx, my, window) then
                         if type(self.onClick) == "function" then
                             return self:onClick(page, window)
                         end
+                    end
+                end
+            end
+            if event == "key" then
+                local key = p1
+                if key == self.key then
+                    if type(self.onClick) == "function" then
+                        return self:onClick(page, window)
                     end
                 end
             end
@@ -59,6 +70,7 @@ local Button = {
         colors = { value = "number", type = "type" },
         braceColor = { value = "number", type = "type" },
         braces = { value = "string", type = "type" },
+        key = { values = {"number", "nil"}, type = "types" },
         onClick = { value = "function", type = "type" },
         draw = { value = "function", type = "type" },
         event = { value = "function", type = "type" },
