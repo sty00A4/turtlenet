@@ -5,27 +5,37 @@ local Container = {
     std = {
         ---@type table<integer|string, AnyElement>
         elements = {},
+        window = {},
         ---@param self Container
         ---@param page GUI
         update = function (self, page)
+            local back = term.current()
+            term.redirect(self.window)
             for _, element in pairs(self.elements) do
                 element:update(page)
             end
+            term.redirect(back)
         end,
         ---@param self Container
         ---@param page GUI
         draw = function (self, page)
+            local back = term.current()
+            term.redirect(self.window)
             for _, element in pairs(self.elements) do
                 element:draw(page)
             end
+            term.redirect(back)
         end,
         ---@param self Container
         ---@param page GUI
         ---@param events table<integer, any>
         event = function (self, page, events)
+            local back = term.current()
+            term.redirect(self.window)
             for _, element in pairs(self.elements) do
                 element:event(page, events)
             end
+            term.redirect(back)
         end,
     },
     types = {
