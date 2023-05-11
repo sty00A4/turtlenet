@@ -6,6 +6,20 @@ local Container = {
         ---@type table<integer|string, AnyElement>
         elements = {},
         window = {},
+        ---@param self AnyElement
+        ---@param id number|string|nil
+        ---@return AnyElement|nil
+        getElementById = function (self, id)
+            for _, element in pairs(self.elements) do
+                if element.id == id then
+                    return element
+                end
+                if type(element.getElementById) == "function" then
+                    local res = element:getElementById(id)
+                    if res then return res end
+                end
+            end
+        end,
         ---@param self Container
         ---@param page GUI
         ---@param window table|nil
@@ -13,7 +27,9 @@ local Container = {
             local back = term.current()
             term.redirect(self.window)
             for _, element in pairs(self.elements) do
-                element:update(page, window)
+                if element.active then
+                    element:update(page, window)
+                end
             end
             term.redirect(back)
         end,
@@ -24,7 +40,9 @@ local Container = {
             local back = term.current()
             term.redirect(self.window)
             for _, element in pairs(self.elements) do
-                element:draw(page, window)
+                if element.visible then
+                    element:draw(page, window)
+                end
             end
             term.redirect(back)
         end,
@@ -36,7 +54,9 @@ local Container = {
             local back = term.current()
             term.redirect(self.window)
             for _, element in pairs(self.elements) do
-                element:event(page, events, window)
+                if element.active then
+                    element:event(page, events, window)
+                end
             end
             term.redirect(back)
         end,

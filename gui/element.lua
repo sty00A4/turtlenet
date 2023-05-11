@@ -123,6 +123,10 @@ end
 local Element = {
     ---@class Element
     std = {
+        ---@type integer|string|nil
+        id = nil,
+        active = true,
+        visible = true,
         x = 1.,
         y = 1.,
         w = 1,
@@ -160,6 +164,9 @@ local Element = {
         end,
     },
     types = {
+        id = { values = {"number", "string", "nil"}, type = "types" },
+        active = { value = "boolean", type = "type" },
+        visible = { value = "boolean", type = "type" },
         x = { value = "number", type = "type" },
         y = { value = "number", type = "type" },
         position = { value = "ElementPosition", type = "meta" },

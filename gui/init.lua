@@ -19,6 +19,7 @@ function GUI.new(elements)
         ---@class GUI
         {
             elements = elements,
+            getElementById = GUI.getElementById,
             draw = GUI.draw,
             update = GUI.update,
             event = GUI.event,
@@ -30,18 +31,36 @@ function GUI.new(elements)
     )
 end
 ---@param self GUI
+---@param id number|string|nil
+---@return AnyElement|nil
+function GUI:getElementById(id)
+    for _, element in pairs(self.elements) do
+        if element.id == id then
+            return element
+        end
+        if type(element.getElementById) == "function" then
+            local res = element:getElementById(id)
+            if res then return res end
+        end
+    end
+end
+---@param self GUI
 ---@param window table|nil
 function GUI:draw(window)
     term.clear()
     for _, element in pairs(self.elements) do
-        element:draw(self, window)
+        if element.visible then
+            element:draw(self, window)
+        end
     end
 end
 ---@param self GUI
 ---@param window table|nil
 function GUI:update(window)
     for _, element in pairs(self.elements) do
-        element:update(self, window)
+        if element.active then
+            element:update(self, window)
+        end
     end
 end
 ---@param self GUI
@@ -50,7 +69,9 @@ function GUI:event(window)
     local event = { os.pullEvent() }
     term.setCursorBlink(false)
     for _, element in pairs(self.elements) do
-        element:event(self, event, window)
+        if element.active then
+            element:event(self, event, window)
+        end
     end
 end
 ---@param self GUI
@@ -137,7 +158,8 @@ function prompt.input(msg, width, height)
             x = 2, y = 1, w = width - 2, h = height - 2,
             text = msg
         },
-        input = input.Input.new {
+        input.Input.new {
+            id = "input",
             x = 2, y = H - 2,  w = width - 2,
             empty = "...",
             bg = colors.black
@@ -155,7 +177,7 @@ function prompt.input(msg, width, height)
     page:run(promptWindow)
     term.redirect(mainWindow)
     promptWindow.setVisible(false)
-    return page.elements.input.input
+    return page:getElementById("input").input
 end
 
 return {
@@ -182,7 +204,8 @@ return {
             input.Input.new {
                 x = 1, y = 2,
             },
-            text = text.Text.new {
+            text.Text.new {
+                id = "text",
                 x = 1, y = 3,
                 text = "this is a test",
                 w = 20
@@ -192,7 +215,7 @@ return {
                 label = "change",
                 color = colors.yellow,
                 onClick = function (self, page)
-                    page.elements.text.text = prompt.input("What is the text supposed to be?")
+                    page:getElementById("text").text = prompt.input("What is the text supposed to be?")
                 end
             },
         }
