@@ -47,6 +47,11 @@ elseif args[1] == "picolua" then
     end
 elseif args[1] == "gui" then
     return turtlenet.gui.test()
+elseif args[1] == "update" then
+    fs.delete("turtlenet")
+    fs.delete("turt.lua")
+    print "Deleted old directory"
+    shell.run "pastebin run fizMeZiw" print "Downloaded Turtlenet"
 elseif args[1] == nil then
     print "USAGE:"
     print "  turt server - starts as a server"
