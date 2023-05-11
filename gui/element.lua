@@ -146,14 +146,14 @@ local Element = {
         ---@param window table|nil
         ---@return boolean
         mouseOver = function (self, mx, my, window)
+            local x, y = absolutePosition(self.position, self.x, self.y)
+            local w, h = absoluteTransform(self.transform, self.w, self.h)
             local offsetX, offsetY = 0, 0
-            if window and self.label == "OK" then
+            if window then
                 offsetX, offsetY = window.getPosition()
                 offsetX, offsetY = offsetX - 1, offsetY - 1
             end
-            local x, y = absolutePosition(self.position, self.x, self.y)
             x, y = x + offsetX, y + offsetY
-            local w, h = absoluteTransform(self.transform, self.w, self.h)
             return (mx >= x and mx <= x + w - 1) and (my >= y and my <= y + h - 1)
         end,
     },

@@ -129,7 +129,7 @@ return {
                 label = "exit",
                 color = colors.red,
                 onClick = function (self, page)
-                    if prompt.confirm("are you sure you wanna exit?") then
+                    if prompt.confirm("Are you sure you wanna exit?") then
                         error "exited"
                     end
                 end
@@ -143,13 +143,7 @@ return {
                 w = 20
             }
         }
-        page.running = true
-        while page.running do
-            page:update()
-            term.clear()
-            page:draw()
-            page:event()
-        end
+        page:run()
     end,
     GUI = GUI,
 }
