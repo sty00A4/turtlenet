@@ -7,16 +7,16 @@ local Button = {
         color = colors.white,
         braceColor = colors.gray,
         braces = "[]",
-        ---@param self Element|Button|Input|Text
+        ---@param self AnyElement
         ---@param page GUI
         onClick = function (self, page) end,
-        ---@param self Element|Button|Input|Text
+        ---@param self AnyElement
         ---@param page GUI
         update = function (self, page)
             self.w = #self.label
             self.h = 1
         end,
-        ---@param self Element|Button|Input|Text
+        ---@param self AnyElement
         ---@param page GUI
         draw = function (self, page)
             local cx, cy = term.getCursorPos()
@@ -34,7 +34,7 @@ local Button = {
             term.setTextColor(fg)
             term.setBackgroundColor(bg)
         end,
-        ---@param self Element|Button|Input|Text
+        ---@param self AnyElement
         ---@param page GUI
         ---@param events table<integer, any>
         event = function (self, page, events)
@@ -64,7 +64,7 @@ local Button = {
         __name = "Button"
     }
 }
----@param opts table
+---@param opts Button
 function Button.new(opts)
     element.checkOptsElement(2, opts, Button.std, Button.types)
     local button = element.Element.new(opts)

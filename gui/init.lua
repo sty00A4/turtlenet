@@ -2,14 +2,17 @@ local element = require "turtlenet.gui.element"
 local text = require "turtlenet.gui.text"
 local button = require "turtlenet.gui.button"
 local input = require "turtlenet.gui.input"
+local container = require "turtlenet.gui.container"
 local prompt = require "turtlenet.gui.prompt"
+
+---@alias AnyElement Element|Button|Input|Text|Container
 
 local GUI = {
     mt = {
         __name = "gui"
     }
 }
----@param elements table<integer|string, Element|Button|Input|Text>
+---@param elements table<integer|string, AnyElement>
 ---@return GUI
 function GUI.new(elements)
     element.checkTable(2, elements, "elements", {"number", "string"}, element.checkMetaName, "Element")

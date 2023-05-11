@@ -10,7 +10,7 @@ local Input = {
         h = 1,
         fg = colors.white,
         bg = colors.gray,
-        ---@param self Element|Button|Input|Text
+        ---@param self AnyElement
         ---@param page GUI
         update = function (self, page)
             if self.focused then
@@ -20,7 +20,7 @@ local Input = {
                 term.setCursorBlink(true)
             end
         end,
-        ---@param self Element|Button|Input|Text
+        ---@param self AnyElement
         ---@param page GUI
         draw = function (self, page)
             local cx, cy = term.getCursorPos()
@@ -48,7 +48,7 @@ local Input = {
             term.setTextColor(fg)
             term.setBackgroundColor(bg)
         end,
-        ---@param self Element|Button|Input|Text
+        ---@param self AnyElement
         ---@param page GUI
         ---@param events table<integer, any>
         event = function (self, page, events)
@@ -89,7 +89,7 @@ local Input = {
         __name = "Input"
     }
 }
----@param opts table
+---@param opts Input
 function Input.new(opts)
     element.checkOptsElement(2, opts, Input.std, Input.types)
     local button = element.Element.new(opts)

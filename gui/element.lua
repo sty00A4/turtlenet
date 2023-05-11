@@ -127,17 +127,17 @@ local Element = {
         h = 1,
         position = ElementPosition.absolute,
         transform = ElementTransfrom.absolute,
-        ---@param self Element|Button|Input|Text
+        ---@param self AnyElement
         ---@param page GUI
         draw = function (self, page) end,
-        ---@param self Element|Button|Input|Text
+        ---@param self AnyElement
         ---@param page GUI
         update = function (self, page) end,
-        ---@param self Element|Button|Input|Text
+        ---@param self AnyElement
         ---@param page GUI
         ---@param events table<integer, any>
         event = function (self, page, events) end,
-        ---@param self Element|Button|Input|Text
+        ---@param self AnyElement
         ---@param mx integer
         ---@param my integer
         ---@return boolean
@@ -159,8 +159,8 @@ local Element = {
         __name = "Element"
     }
 }
----@param opts table
----@return Element
+---@param opts AnyElement
+---@return AnyElement
 function Element.new(opts)
     checkOpts(3, opts, Element.std, Element.types)
 

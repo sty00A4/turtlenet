@@ -8,7 +8,7 @@ local Text = {
         h = 1,
         fg = colors.white,
         bg = colors.black,
-        ---@param self Element|Button|Input|Text
+        ---@param self AnyElement
         ---@param page GUI
         draw = function (self, page)
             local cx, cy = term.getCursorPos()
@@ -51,7 +51,7 @@ local Text = {
         __name = "Text"
     }
 }
----@param opts table
+---@param opts Text
 function Text.new(opts)
     element.checkOptsElement(2, opts, Text.std, Text.types)
     local button = element.Element.new(opts)
