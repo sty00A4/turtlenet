@@ -9,7 +9,7 @@ local GUI = {
         __name = "gui"
     }
 }
----@param elements table<integer|string, Element|Button>
+---@param elements table<integer|string, Element|Button|Input|Text>
 ---@return GUI
 function GUI.new(elements)
     element.checkTable(2, elements, "elements", {"number", "string"}, element.checkMetaName, "Element")
@@ -42,6 +42,7 @@ end
 ---@param self GUI
 function GUI:event()
     local event = { os.pullEvent() }
+    term.setCursorBlink(false)
     for _, element in pairs(self.elements) do
         element:event(self, event)
     end
@@ -51,6 +52,7 @@ function GUI:run()
     self.running = true
     while self.running do
         self:update()
+        term.clear()
         self:draw()
         self:event()
     end
@@ -73,6 +75,14 @@ return {
                 onClick = function (self, page)
                     error "clicked"
                 end
+            },
+            input.Input.new {
+                x = 1, y = 2,
+            },
+            text.Text.new {
+                x = 1, y = 3,
+                text = "this is a test",
+                w = 20
             }
         }
         page:run()

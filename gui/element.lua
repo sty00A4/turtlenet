@@ -5,6 +5,13 @@ local ElementPosition = {
     ---@class ElementPosition
     relative = setmetatable({}, ElementPositionMeta),
 }
+local ElementTransfromMeta = { __name = "ElementTransfrom" }
+local ElementTransfrom = {
+    ---@class ElementTransfrom
+    absolute = setmetatable({}, ElementTransfromMeta),
+    ---@class ElementTransfrom
+    relative = setmetatable({}, ElementTransfromMeta),
+}
 
 ---@param level integer
 ---@param value any
@@ -79,6 +86,16 @@ local function absolutePosition(position, x, y)
     end
     return x, y
 end
+---@param transform ElementTransfrom
+---@param w integer
+---@param h integer
+local function absoluteTransform(transform, w, h)
+    local W, H = term.getSize()
+    if transform == ElementTransfrom.relative then
+        w, h = W * w, H * h
+    end
+    return w, h
+end
 
 ---@param level integer
 ---@param opts table<string, any>
@@ -106,17 +123,29 @@ local Element = {
     std = {
         x = 1.,
         y = 1.,
+        w = 1,
+        h = 1,
         position = ElementPosition.absolute,
-        ---@param self Button|Element
+        transform = ElementTransfrom.absolute,
+        ---@param self Element|Button|Input|Text
         ---@param page GUI
         draw = function (self, page) end,
-        ---@param self Button|Element
+        ---@param self Element|Button|Input|Text
         ---@param page GUI
         update = function (self, page) end,
-        ---@param self Button|Element
+        ---@param self Element|Button|Input|Text
         ---@param page GUI
         ---@param events table<integer, any>
         event = function (self, page, events) end,
+        ---@param self Element|Button|Input|Text
+        ---@param mx integer
+        ---@param my integer
+        ---@return boolean
+        mouseOver = function (self, mx, my)
+            local x, y = absolutePosition(self.position, self.x, self.y)
+            local w, h = absoluteTransform(self.transform, self.w, self.h)
+            return (mx >= x and mx <= x + w - 1) and (my >= y and my <= y + h - 1)
+        end,
     },
     types = {
         x = { value = "number", type = "type" },
@@ -130,7 +159,7 @@ local Element = {
         __name = "Element"
     }
 }
----@param opts Element
+---@param opts table
 ---@return Element
 function Element.new(opts)
     checkOpts(3, opts, Element.std, Element.types)
@@ -158,6 +187,7 @@ return {
     checkValue = checkValue,
     checkTable = checkTable,
     absolutePosition = absolutePosition,
+    absoluteTransform = absoluteTransform,
     checkOpts = checkOpts,
     checkOptsElement = checkOptsElement,
 }
