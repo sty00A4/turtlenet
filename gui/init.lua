@@ -32,6 +32,7 @@ end
 ---@param self GUI
 ---@param window table|nil
 function GUI:draw(window)
+    term.clear()
     for _, element in pairs(self.elements) do
         element:draw(self, window)
     end
@@ -58,7 +59,6 @@ function GUI:run(window)
     self.running = true
     while self.running do
         self:update(window)
-        term.clear()
         self:draw(window)
         self:event(window)
     end
@@ -114,6 +114,49 @@ function prompt.confirm(msg, width, height)
     promptWindow.setVisible(false)
     return confirm
 end
+---@param msg string
+---@param width integer|nil
+---@param height integer|nil
+---@return string
+function prompt.input(msg, width, height)
+    local mainWindow = term.current()
+    local W, H = mainWindow.getSize()
+    width = width or #msg + 2
+    width = width >= 10 and width or 10
+    width = width <= W and width or W
+    height = height or 5
+    height = height >= 5 and height or 5
+    height = height <= H and height or H
+    local x, y = math.floor(W / 2 - width / 2), math.floor(H / 2 - height / 2)
+    local promptWindow = window.create(mainWindow, x, y, width, height)
+    local W, H = promptWindow.getSize()
+    term.redirect(promptWindow)
+    term.setBackgroundColor(colors.gray)
+    local page = GUI.new {
+        text.Text.new {
+            x = 2, y = 1, w = width - 2, h = height - 2,
+            text = msg
+        },
+        input = input.Input.new {
+            x = 2, y = H - 2,  w = width - 2,
+            empty = "...",
+            bg = colors.black
+        },
+        button.Button.new {
+            x = 1, y = height,
+            label = "OK", color = colors.green,
+            braceColor = colors.lightGray,
+            key = keys.enter,
+            onClick = function (self, page)
+                page.running = false
+            end
+        },
+    }
+    page:run(promptWindow)
+    term.redirect(mainWindow)
+    promptWindow.setVisible(false)
+    return page.elements.input.input
+end
 
 return {
     element = element,
@@ -139,11 +182,19 @@ return {
             input.Input.new {
                 x = 1, y = 2,
             },
-            text.Text.new {
+            text = text.Text.new {
                 x = 1, y = 3,
                 text = "this is a test",
                 w = 20
-            }
+            },
+            button.Button.new {
+                x = 1, y = 4,
+                label = "change",
+                color = colors.yellow,
+                onClick = function (self, page)
+                    page.elements.text.text = prompt.input("What is the text supposed to be?")
+                end
+            },
         }
         page:run()
         term.clear()
