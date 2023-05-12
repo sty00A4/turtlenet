@@ -55,10 +55,12 @@ end
 ---@param id integer
 ---@param client Client
 function Server:addClient(id, client)
-    if self:client(id) then
+    if self.clients[id] then
         self.log:push("error", ("%s already exists"):format(client), "server.Server.addClient")
+        return false
     else
         self.clients[id] = client
+        return true
     end
 end
 ---@param self Server
@@ -91,13 +93,18 @@ function Server:listen()
     local hostName = "Server#"..tostring(os.getComputerID())
     rednet.host(NET_PROTOCOL, hostName)
     self.running = true
+    self.log:push("debug", "started as "..hostName)
     while self.running do
         local id, msg = rednet.receive(NET_PROTOCOL, SERVER_TIMEOUT)
         if id then
             if not self:blocked(id) then
                 if type(msg) == "table" then
-                    if msg.head == "info" then
-                        local client = self:client(id) or client.Client.new(id, transform.Transform.default())
+                    if msg.head == "register" then
+                        local success = self:addClient(id, client.Client.new(id, transform.Transform.default()))
+                        rednet.send(id, success, NET_PROTOCOL)
+                        if success then self.log:push("info", ("registered client #%s"):format(id), "server.Server.listen") end
+                    elseif msg.head == "info" then
+                        local client = self:client(id)
                         if client then
                             msg = turtleInfo(msg, client)
                             client.transform.position.x = msg.x
@@ -107,6 +114,8 @@ function Server:listen()
                             client.inventory = msg.inventory
                             client.fuel = msg.fuel
                             client.status = msg.status
+                        else
+                            self.log:push("info", ("unregistered computer #%s is trying to send info"):format(id), "server.Server.listen")
                         end
                     elseif msg.head == "task" then
                         if msg.status == "request" then
@@ -117,6 +126,8 @@ function Server:listen()
                                 self.log:push("info", ("unregistered computer #%s is trying to request a task"):format(id), "server.Server.listen")
                             end
                         end
+                    else
+                        self.log:push("info", ("#%s sent unknown request: %q (type %s)"):format(id, msg.head, type(msg.head)), "server.Server.listen")
                     end
                 end
             end
@@ -147,23 +158,24 @@ function Server:gui()
             end
         }
     end
+    ---@param msg Message
+    local function newMsg(msg, id)
+        return gui.text.Text.new {
+            id = id, h = 2,
+            text = msg:tostring(),
+            w = W / 2,
+            fg = msg.type == "error" and (colors.red or colors.white) or colors.white
+        }
+    end
     local listPage = gui.GUI.new {
         gui.text.Text.new {
-            w = W / 2, h = H,
-            text = "CLIENTS:",
-            update = function (_, page, window)
-                ---@type Element|List
-                local listE = page:getElementById("list") if listE then
-                    listE.list = {}
-                    for id, client in pairs(self.clients) do
-                        table.insert(listE.list, newClient(id, client:tostring()))
-                    end
-                end
-            end
+            w = W / 2, h = 1,
+            text = "CLIENTS:"
         },
         gui.list.List.new {
+            id = "clients",
             y = 2,
-            w = W / 2, h = H - 1,
+            w = math.floor(W / 2), h = H - 1,
             list = {},
             ---@param list Element|List
             update = function (list, page, window)
@@ -171,19 +183,48 @@ function Server:gui()
                 for id, client in pairs(self.clients) do
                     table.insert(list.list, newClient(id, client:tostring()))
                 end
+                if #list.list > list.h then list.scroll = #list.list - list.h end
             end
+        },
+        gui.list.List.new {
+            id = "logs",
+            x = math.ceil(W / 2), y = 2,
+            w = math.floor(W / 2), h = H - 1,
+            list = {},
+            ---@param list Element|List
+            update = function (list, page, window)
+                list.list = {}
+                for id, msg in pairs(self.log.log) do
+                    table.insert(list.list, newMsg(msg, "message_"..id))
+                end
+            end,
         }
     }
     listPage:run()
 end
 
 local function start()
+    if ccemux then
+        ccemux.detach("back")
+        ccemux.attach("back", "wireless_modem", {
+            range = 1000,
+            world = "main",
+            interdimensional = false,
+            posX = 0, posY = 10, posZ = 0
+        })
+    end
+    local modem = peripheral.find("modem")
+    if not modem then error("no modem connected") end
+    modem.open(64)
+    peripheral.find("modem", rednet.open)
     local server = Server.new()
-    parallel.waitForAll(function()
+    parallel.waitForAny(function()
         server:listen()
     end, function()
         server:gui()
     end)
+    term.clear()
+    term.setCursorPos(1, 1)
 end
 
 return {

@@ -29,7 +29,7 @@ function Client.new(id, transform)
             tasks = {},
             ---@type ClientStatus
             status = "idle",
-            ---@type table<integer, table>
+            ---@type table<integer, Item|nil>
             inventory = {}, fuel = 0,
 
             tostring = Client.mt.__tostring,

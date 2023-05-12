@@ -14,19 +14,28 @@ local Text = {
         draw = function (self, page, window)
             local cx, cy = term.getCursorPos()
             local fg, bg = term.getTextColor(), term.getBackgroundColor()
-            local x, y = element.absolutePosition(self.position, self.x, self.y)
             local w, h = element.absoluteTransform(self.transform, self.w, self.h)
-
+            local x, y = element.absolutePosition(self.position, self.x, self.y)
+            
             local lines = self.text:sep("\n")
             local idx = 1
-            for y = y, y + h - 1 do
-                term.setCursorPos(x, y)
+            while idx <= #lines do
+                local line = lines[idx]
+                if #line > w then
+                    lines[idx] = line:sub(1, w)
+                    table.insert(lines, idx + 1, line:sub(w + 1, #line))
+                end
+                idx = idx + 1
+            end
+            local idx = 1
+            for ly = y, y + h - 1 do
+                term.setCursorPos(x, ly)
                 term.setTextColor(self.bg)
                 term.write((" "):rep(w))
-
+                
                 local line = lines[idx]
                 if line then
-                    term.setCursorPos(x, y)
+                    term.setCursorPos(x, ly)
                     term.setTextColor(self.fg)
                     if #line <= w then
                         term.write(line)
@@ -36,7 +45,7 @@ local Text = {
                     idx = idx + 1
                 end
             end
-
+            
             term.setCursorPos(cx, cy)
             term.setTextColor(fg)
             term.setBackgroundColor(bg)

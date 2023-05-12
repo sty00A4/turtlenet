@@ -8,7 +8,6 @@ local args = {...}
 if args[1] == "server" then
     return turtlenet.server.start()
 elseif args[1] == "client" then
-    if not turtle then print "computer needs to be a turtle to be a client" return end
     return turtlenet.client.start()
 elseif args[1] == "picolua" then
     if args[2] == "debug" then
