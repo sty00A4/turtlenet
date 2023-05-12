@@ -148,9 +148,9 @@ end
 function Server:gui()
     local W, H = term.getSize()
     local function newClient(id, name)
-        return gui.button.Button.new {
+        return gui.Button.new {
             label = ("%s: %s"):format(id, name),
-            onClick = function (_, page, window)
+            onClick = function (_, gui, page, window)
                 local client = self.clients[id]
                 if client then
                     client:gui(self, window)
@@ -160,25 +160,26 @@ function Server:gui()
     end
     ---@param msg Message
     local function newMsg(msg, id)
-        return gui.text.Text.new {
+        return gui.Text.new {
             id = id, h = 2,
             text = msg:tostring(),
             w = W / 2,
             fg = msg.type == "error" and (colors.red or colors.white) or colors.white
         }
     end
-    local listPage = gui.GUI.new {
-        gui.text.Text.new {
+    
+    local main = gui.Page.new {
+        gui.Text.new {
             w = W / 2, h = 1,
             text = "CLIENTS:"
         },
-        gui.list.List.new {
+        gui.List.new {
             id = "clients",
             y = 2,
             w = math.floor(W / 2), h = H - 1,
             list = {},
             ---@param list Element|List
-            update = function (list, page, window)
+            update = function (list, gui, page, window)
                 list.list = {}
                 for id, client in pairs(self.clients) do
                     table.insert(list.list, newClient(id, client:tostring()))
@@ -186,13 +187,13 @@ function Server:gui()
                 if #list.list > list.h then list.scroll = #list.list - list.h end
             end
         },
-        gui.list.List.new {
+        gui.List.new {
             id = "logs",
             x = math.ceil(W / 2), y = 2,
             w = math.floor(W / 2), h = H - 1,
             list = {},
             ---@param list Element|List
-            update = function (list, page, window)
+            update = function (list, gui, page, window)
                 list.list = {}
                 for id, msg in pairs(self.log.log) do
                     table.insert(list.list, newMsg(msg, "message_"..id))
@@ -200,7 +201,10 @@ function Server:gui()
             end,
         }
     }
-    listPage:run()
+    local interface = gui.GUI.new {
+        main = main
+    }
+    interface:run()
 end
 
 local function start()

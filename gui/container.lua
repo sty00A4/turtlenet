@@ -21,41 +21,44 @@ local Container = {
             end
         end,
         ---@param self Container
-        ---@param page GUI
+        ---@param gui GUI
+        ---@param page Page
         ---@param window table|nil
-        update = function (self, page, window)
+        update = function (self, gui, page, window)
             local back = term.current()
             term.redirect(self.window)
             for _, element in pairs(self.elements) do
                 if element.active then
-                    element:update(page, window)
+                    element:update(gui, page, window)
                 end
             end
             term.redirect(back)
         end,
         ---@param self Container
-        ---@param page GUI
+        ---@param gui GUI
+        ---@param page Page
         ---@param window table|nil
-        draw = function (self, page, window)
+        draw = function (self, gui, page, window)
             local back = term.current()
             term.redirect(self.window)
             for _, element in pairs(self.elements) do
                 if element.visible then
-                    element:draw(page, window)
+                    element:draw(gui, page, window)
                 end
             end
             term.redirect(back)
         end,
         ---@param self Container
-        ---@param page GUI
+        ---@param gui GUI
+        ---@param page Page
         ---@param events table<integer, any>
         ---@param window table|nil
-        event = function (self, page, events, window)
+        event = function (self, gui, page, events, window)
             local back = term.current()
             term.redirect(self.window)
             for _, element in pairs(self.elements) do
                 if element.active then
-                    element:event(page, events, window)
+                    element:event(gui, page, events, window)
                 end
             end
             term.redirect(back)
@@ -83,6 +86,4 @@ function Container.new(opts)
     return button
 end
 
-return {
-    Container = Container
-}
+return Container

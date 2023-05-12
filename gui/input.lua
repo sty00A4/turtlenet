@@ -11,9 +11,10 @@ local Input = {
         fg = colors.white,
         bg = colors.gray,
         ---@param self AnyElement
-        ---@param page GUI
+        ---@param gui GUI
+        ---@param page Page
         ---@param window table|nil
-        update = function (self, page, window)
+        update = function (self, gui, page, window)
             if self.focused then
                 local x, y = element.absolutePosition(self.position, self.x, self.y)
                 local w, h = element.absoluteTransform(self.transform, self.w, self.h)
@@ -22,9 +23,10 @@ local Input = {
             end
         end,
         ---@param self AnyElement
-        ---@param page GUI
+        ---@param gui GUI
+        ---@param page Page
         ---@param window table|nil
-        draw = function (self, page, window)
+        draw = function (self, gui, page, window)
             local cx, cy = term.getCursorPos()
             local fg, bg = term.getTextColor(), term.getBackgroundColor()
             local x, y = element.absolutePosition(self.position, self.x, self.y)
@@ -51,10 +53,11 @@ local Input = {
             term.setBackgroundColor(bg)
         end,
         ---@param self AnyElement
-        ---@param page GUI
+        ---@param gui GUI
+        ---@param page Page
         ---@param events table<integer, any>
         ---@param window table|nil
-        event = function (self, page, events, window)
+        event = function (self, gui, page, events, window)
             local event, p1, p2, p3 = events[1], events[2], events[3], events[4]
             if event == "mouse_click" then
                 local mb, mx, my = p1, p2, p3
@@ -105,6 +108,4 @@ function Input.new(opts)
     return button
 end
 
-return {
-    Input = Input
-}
+return Input

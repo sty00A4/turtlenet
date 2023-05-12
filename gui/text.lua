@@ -9,9 +9,10 @@ local Text = {
         fg = colors.white,
         bg = colors.black,
         ---@param self AnyElement
-        ---@param page GUI
+        ---@param gui GUI
+        ---@param page Page
         ---@param window table|nil
-        draw = function (self, page, window)
+        draw = function (self, gui, page, window)
             local cx, cy = term.getCursorPos()
             local fg, bg = term.getTextColor(), term.getBackgroundColor()
             local w, h = element.absoluteTransform(self.transform, self.w, self.h)
@@ -68,6 +69,4 @@ function Text.new(opts)
     return button
 end
 
-return {
-    Text = Text
-}
+return Text

@@ -115,7 +115,7 @@ function Turtle:forward()
     if success then
         self.transform:forward()
     else
-        self.log:push("error", msg, "Turtle.forward")
+        self.log:push("error", msg or "couldn't move forward", "Turtle.forward")
     end
 end
 ---@param self Turtle
@@ -124,7 +124,7 @@ function Turtle:back()
     if success then
         self.transform:back()
     else
-        self.log:push("error", msg, "Turtle.back")
+        self.log:push("error", msg or "couldn't move back", "Turtle.back")
     end
 end
 ---@param self Turtle
@@ -133,7 +133,7 @@ function Turtle:up()
     if success then
         self.transform:up()
     else
-        self.log:push("error", msg, "Turtle.up")
+        self.log:push("error", msg or "couldn't move up", "Turtle.up")
     end
 end
 ---@param self Turtle
@@ -142,7 +142,7 @@ function Turtle:down()
     if success then
         self.transform:down()
     else
-        self.log:push("error", msg, "Turtle.down")
+        self.log:push("error", msg or "couldn't move down", "Turtle.down")
     end
 end
 ---@param self Turtle
@@ -168,11 +168,14 @@ end
 ---@return boolean
 function Turtle:register()
     if not self.serverId then gui.prompt.info "no server ID provided" return false end
+    ---@diagnostic disable-next-line: undefined-field
+    if self.serverId == os.getComputerID() then gui.prompt.info "server ID is this computer's ID" return false end
     rednet.send(self.serverId, { head = "register" }, NET_PROTOCOL)
     local recvId, success = nil, false
     local tries = 1
     while recvId ~= self.serverId do
         recvId, success = rednet.receive(NET_PROTOCOL, CLIENT_TIMEOUT)
+        if type(success) ~= "boolean" then success = false end
         tries = tries + 1
         if tries > 5 then break end
     end
@@ -186,6 +189,7 @@ function Turtle:listen()
         while recvId ~= self.serverId do
             recvId, program = rednet.receive(NET_PROTOCOL, CLIENT_TIMEOUT)
         end
+        ---@diagnostic disable-next-line: undefined-field
         os.queueEvent("update")
         if type(program) == "table" then
             ---@type Program
@@ -199,6 +203,7 @@ function Turtle:listen()
             while true do
                 program:step()
                 if os.time() - infoTimer >= 1 then
+                    ---@diagnostic disable-next-line: undefined-field
                     os.queueEvent("update")
                     if self.serverId then rednet.send(self.serverId, self:toInfo()) end
                     infoTimer = os.time()
@@ -211,54 +216,66 @@ end
 ---@param self Turtle
 function Turtle:gui()
     local W, H = term.getSize()
-    local connectPage = gui.GUI.new {
-        gui.input.Input.new {
+    local connectPage = gui.Page.new {
+        gui.Input.new {
             id = "connect.input",
             x = math.floor(W / 2 - 6), y = math.floor(H / 2 - 1),
-            empty = "server id..."
+            empty = "server ID..."
         },
-        gui.button.Button.new {
+        gui.Button.new {
             id = "connect.button", label = "connect",
+            color = colors.lime,
             x = math.floor(W / 2 - 3), y = math.floor(H / 2 + 1),
             key = keys.enter,
-            ---@param page GUI
-            onClick = function (_, page, window)
+            onClick = function (_, _gui, page, window)
                 local id = tonumber(page:getElementById("connect.input").input)
-                if not id then return gui.prompt.info("server id is not a number") end
+                if not id then return gui.prompt.info("server ID is not a number") end
+                ---@diagnostic disable-next-line: undefined-field
+                if id == os.getComputerID() then return gui.prompt.info("server ID is this computer's ID") end
                 self.serverId = id
-                page.running = false
+                _gui:changePage("connecting")
+                _gui:draw(window)
+            end
+        },
+        gui.Button.new {
+            id = "connect.exit", label = "exit",
+            color = colors.red,
+            x = 1, y = 1,
+            onClick = function (_, _gui)
+                _gui:exit()
             end
         }
     }
-    local connectingPage = gui.GUI.new {
-        gui.text.Text.new {
+    local connectingPage = gui.Page.new {
+        gui.Text.new {
             id = "connecting.text", text = "connecting...",
             x = math.floor(W / 2 - 7), y = math.floor(H / 2),
-            update = function (_, page, window)
+            ---@param _gui GUI
+            ---@param page Page
+            update = function (_self, _gui, page, window)
                 self:register()
                 if not self.registered then gui.prompt.info("couldn't connect to #"..tostring(self.serverId)) end
-                page.running = false
+                _gui:changePage("connect")
             end
         }
     }
-    local mainPage = gui.GUI.new {
-        gui.text.Text.new {
+    local main = gui.Page.new {
+        gui.Text.new {
             id = "main.text", text = "main app",
             fg = colors.lime,
             x = math.floor(W / 2 - 4), y = math.floor(H / 2),
         }
     }
-    while not self.registered do
-        connectPage:run()
-        connectingPage:draw()
-        connectingPage:run()
-    end
-    parallel.waitForAny(function ()
-        while self.serverId do
-            if self.registered then
-                mainPage:run()
-            end
-            connectingPage:run()
+    local interface = gui.GUI.new {
+        main = main,
+        connecting = connectingPage,
+        connect = connectPage,
+    }
+    interface.currentPage = interface.pages.connect
+    parallel.waitForAll(function ()
+        interface.running = true
+        while interface.running do
+            interface:run()
         end
     end, function ()
         self:listen()

@@ -33,12 +33,12 @@ local function checkMetaName(level, value, name, ...)
     if not meta then
         error(("expected %s to be of type %s, not %s"):format(name, table.concat(names, "|"), type(value)), level + 1)
     end
-    local name = meta.__name
-    if not name then
-        error(("expected %s to be of type %s, not %s"):format(name, table.concat(names, "|"), type(value)), level + 1)
+    local mateName = meta.__name
+    if not mateName then
+        error(("expected %s to be of type %s, not %s"):format(mateName, table.concat(names, "|"), type(value)), level + 1)
     end
-    if not table.contains(names, name) then
-        error(("expected %s to be of type %s, not %s"):format(name, table.concat(names, "|"), name), level + 1)
+    if not table.contains(names, mateName) then
+        error(("expected %s to be of type %s, not %s"):format(name, table.concat(names, "|"), mateName), level + 1)
     end
 end
 ---@param level integer
@@ -134,18 +134,21 @@ local Element = {
         position = ElementPosition.absolute,
         transform = ElementTransfrom.absolute,
         ---@param self AnyElement
-        ---@param page GUI
+        ---@param gui GUI
+        ---@param page Page
         ---@param window table|nil
-        draw = function (self, page, window) end,
+        draw = function (self, gui, page, window) end,
         ---@param self AnyElement
-        ---@param page GUI
+        ---@param gui GUI
+        ---@param page Page
         ---@param window table|nil
-        update = function (self, page, window) end,
+        update = function (self, gui, page, window) end,
         ---@param self AnyElement
-        ---@param page GUI
+        ---@param gui GUI
+        ---@param page Page
         ---@param window table|nil
         ---@param events table<integer, any>
-        event = function (self, page, events, window) end,
+        event = function (self, gui, page, events, window) end,
         ---@param self AnyElement
         ---@param mx integer
         ---@param my integer

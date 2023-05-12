@@ -1,4 +1,5 @@
 local transform = require "turtlenet.apps.server.transform"
+local gui = require "turtlenet.gui"
 
 ---@alias ClientStatus "idle"|"task"
 ---@alias Tasks table<integer, any>
@@ -43,7 +44,13 @@ end
 ---@param server Server
 ---@param window table
 function Client:gui(server, window)
-    
+    local interface = gui.GUI.new {
+        main = gui.Page.new {
+            
+        }
+    }
+
+    interface:run()
 end
 
 return {

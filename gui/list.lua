@@ -11,9 +11,10 @@ local List = {
         fg = colors.white,
         bg = colors.black,
         ---@param self Element|List
-        ---@param page GUI
+        ---@param gui GUI
+        ---@param page Page
         ---@param window table|nil
-        draw = function (self, page, window)
+        draw = function (self, gui, page, window)
             local cx, cy = term.getCursorPos()
             local fg, bg = term.getTextColor(), term.getBackgroundColor()
             local x, y = element.absolutePosition(self.position, self.x, self.y)
@@ -24,7 +25,7 @@ local List = {
                 local element = self.list[i + self.scroll]
                 if element then
                     element.x, element.y = term.getCursorPos()
-                    element:draw(page, window)
+                    element:draw(gui, page, window)
                 end
             end
 
@@ -33,10 +34,11 @@ local List = {
             term.setBackgroundColor(bg)
         end,
         ---@param self Element|List
-        ---@param page GUI
+        ---@param gui GUI
+        ---@param page Page
         ---@param events table<integer, any>
         ---@param window table|nil
-        event = function (self, page, events, window)
+        event = function (self, gui, page, events, window)
             local event, p1, p2, p3 = events[1], events[2], events[3], events[4]
             if event == "mouse_click" then
                 local mb, mx, my = p1, p2, p3
@@ -44,7 +46,7 @@ local List = {
                     local over, element = self:mouseOver(mx, my, window)
                     if over and element then
                         if type(element.onClick) == "function" then
-                            return element:onClick(page, window)
+                            return element:onClick(gui, page, window)
                         end
                     end
                 end
@@ -102,6 +104,4 @@ function List.new(opts)
     return button
 end
 
-return {
-    List = List
-}
+return List

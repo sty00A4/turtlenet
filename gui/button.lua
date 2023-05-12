@@ -10,20 +10,23 @@ local Button = {
         ---@type integer|nil
         key = nil,
         ---@param self AnyElement
-        ---@param page GUI
+        ---@param gui GUI
+        ---@param page Page
         ---@param window table|nil
-        onClick = function (self, page, window) end,
+        onClick = function (self, gui, page, window) end,
         ---@param self AnyElement
-        ---@param page GUI
+        ---@param gui GUI
+        ---@param page Page
         ---@param window table|nil
-        update = function (self, page, window)
+        update = function (self, gui, page, window)
             self.w = #self.label + 2
             self.h = 1
         end,
         ---@param self AnyElement
-        ---@param page GUI
+        ---@param gui GUI
+        ---@param page Page
         ---@param window table|nil
-        draw = function (self, page, window)
+        draw = function (self, gui, page, window)
             local cx, cy = term.getCursorPos()
             local fg, bg = term.getTextColor(), term.getBackgroundColor()
             local x, y = element.absolutePosition(self.position, self.x, self.y)
@@ -40,17 +43,18 @@ local Button = {
             term.setBackgroundColor(bg)
         end,
         ---@param self AnyElement
-        ---@param page GUI
+        ---@param gui GUI
+        ---@param page Page
         ---@param events table<integer, any>
         ---@param window table|nil
-        event = function (self, page, events, window)
+        event = function (self, gui, page, events, window)
             local event, p1, p2, p3 = events[1], events[2], events[3], events[4]
             if event == "mouse_click" then
                 local mb, mx, my = p1, p2, p3
                 if mb == 1 then
                     if self:mouseOver(mx, my, window) then
                         if type(self.onClick) == "function" then
-                            return self:onClick(page, window)
+                            return self:onClick(gui, page, window)
                         end
                     end
                 end
@@ -59,7 +63,7 @@ local Button = {
                 local key = p1
                 if key == self.key then
                     if type(self.onClick) == "function" then
-                        return self:onClick(page, window)
+                        return self:onClick(gui, page, window)
                     end
                 end
             end
@@ -87,6 +91,4 @@ function Button.new(opts)
     return button
 end
 
-return {
-    Button = Button
-}
+return Button
