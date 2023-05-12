@@ -185,28 +185,49 @@ end
 ---@param self Turtle
 function Turtle:listen()
     while self.registered do
-        local recvId, program
+        local recvId, message
         while recvId ~= self.serverId do
-            recvId, program = rednet.receive(NET_PROTOCOL, CLIENT_TIMEOUT)
+            recvId, message = rednet.receive(NET_PROTOCOL, CLIENT_TIMEOUT)
         end
         ---@diagnostic disable-next-line: undefined-field
         os.queueEvent("update")
-        if type(program) == "table" then
-            ---@type Program
-            program = program
-            local file = picolua.location.File.new(program.file.path)
-            local compiler = picolua.compiler.Compiler.new(file)
-            compiler.code = program.code
-            compiler.consts = program.consts
-            local program = picolua.program.Program.new(file, picolua.compiler.Compiler.new(file))
-            local infoTimer = os.time()
-            while true do
-                program:step()
-                if os.time() - infoTimer >= 1 then
-                    ---@diagnostic disable-next-line: undefined-field
-                    os.queueEvent("update")
-                    if self.serverId then rednet.send(self.serverId, self:toInfo()) end
-                    infoTimer = os.time()
+        if type(message) == "table" then
+            if message.head == "picolua" then
+                if type(message.code) == "string" then
+                    local file = picolua.location.File.new("<input>")
+                    ---@type ChunkNode
+                    ---@diagnostic disable-next-line: assign-type-mismatch
+                    local ast, err, epos = picolua.parseCode(message.code) if err then
+                        rednet.send(recvId, { head = message.head, err = err, epos = epos }, NET_PROTOCOL)
+                    else
+                        local compiler = picolua.compiler.Compiler.new(file)
+                        picolua.compiler.writeCode(compiler.code, 0, 0, picolua.bytecode.ByteCode.Get, compiler:newConst(self))
+                        picolua.compiler.writeCode(compiler.code, 0, 0, picolua.bytecode.ByteCode.Set, compiler:newConst("Turtle"))
+                        local _, err, epos = compiler:chunk(ast) if err then
+                            rednet.send(recvId, { head = message.head, err = err, epos = epos }, NET_PROTOCOL)
+                        else
+                            compiler.optimisations.count(compiler)
+                            local program = picolua.program.Program.new(file, compiler)
+                            local value, err, epos = program:run()
+                            rednet.send(recvId, { head = message.head, value = value, err = err, epos = epos }, NET_PROTOCOL)
+                        end
+                    end
+                end
+            end
+            if message.head == "command" then
+                if type(message.command) == "string" then
+                    local success = shell.run(message.command)
+                    rednet.send(recvId, { head = message.head, success = success }, NET_PROTOCOL)
+                end
+            end
+            if message.head == "call" then
+                if type(message.func) == "string" then
+                    if type(self[message.func]) == "function" then
+                        if type(message.args) == "table" then
+                            local returns = { self[message.func](table.unpack(message.args)) }
+                            rednet.send(recvId, { head = message.head, returns = returns }, NET_PROTOCOL)
+                        end
+                    end
                 end
             end
         end

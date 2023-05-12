@@ -145,7 +145,10 @@ function Server:listen()
                             end
                         end
                     else
-                        self.log:push("info", ("#%s sent unknown request: %q (type %s)"):format(id, msg.head, type(msg.head)), "server.Server.listen")
+                        local client = self:client(id)
+                        if client then
+                            client:unhandledMessage(msg)
+                        end
                     end
                 end
             end

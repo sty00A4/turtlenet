@@ -27,6 +27,9 @@ function Client.new(id, transform)
         {
             id = id, transform = transform,
             
+            ---@type table<integer, table>
+            unhandledMessages = {},
+
             tasks = {},
             ---@type ClientStatus
             status = "idle",
@@ -36,6 +39,7 @@ function Client.new(id, transform)
             tostring = Client.mt.__tostring,
             eq = Client.mt.__eq,
             gui = Client.gui,
+            unhandledMessage = Client.unhandledMessage,
         },
         Client.mt
     )
@@ -46,11 +50,26 @@ end
 function Client:gui(server, window)
     local interface = gui.GUI.new {
         main = gui.Page.new {
-            
+
         }
     }
 
     interface:run()
+end
+---@param self Client
+---@param message table
+function Client:unhandledMessage(message)
+    table.insert(self.unhandledMessages, message)
+end
+---@param self Client
+---@return table|nil
+function Client:peekUnhandledMessage()
+    return self.unhandledMessages[1]
+end
+---@param self Client
+---@return table|nil
+function Client:popUnhandledMessage()
+    return table.remove(self.unhandledMessages, 1)
 end
 
 return {

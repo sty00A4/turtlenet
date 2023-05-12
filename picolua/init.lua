@@ -18,23 +18,36 @@ local function compile(path)
 
     local _tokens, err, epos = lexer.lex(file, text) if err then return nil, err, epos end
     if not _tokens then return end
-    -- for ln, line in ipairs(_tokens) do
-    --     io.write(("%s: "):format(ln))
-    --     for _, token in ipairs(line) do
-    --         io.write(tostring(token), " ")
-    --     end
-    --     print()
-    -- end
     local ast, err, epos = parser.parse(file, _tokens)
     if not ast then return end
-    -- print(ast)
     return compiler.compile(file, ast)
+end
+---@param code string
+local function compileCode(code)
+    local file = location.File.new("<input>")
+    local _tokens, err, epos = lexer.lex(file, code) if err then return nil, err, epos end
+    if not _tokens then return end
+    local ast, err, epos = parser.parse(file, _tokens)
+    if not ast then return end
+    return compiler.compile(file, ast)
+end
+---@param code string
+local function parseCode(code)
+    local file = location.File.new("<input>")
+    local _tokens, err, epos = lexer.lex(file, code) if err then return nil, err, epos end
+    if not _tokens then return end
+    return parser.parse(file, _tokens)
 end
 ---@param path string
 local function run(path)
     local compiler, err, epos = compile(path) if err then return nil, err, epos end
     if not compiler then return end
-    -- print(bytecode.ByteCode.displayCode(compiler.code))
+    return program.run(compiler.file, compiler)
+end
+---@param code string
+local function runCode(code)
+    local compiler, err, epos = compileCode(code) if err then return nil, err, epos end
+    if not compiler then return end
     return program.run(compiler.file, compiler)
 end
 ---@param path string
@@ -160,5 +173,8 @@ return {
     program = program,
     compile = compile,
     run = run,
+    compileCode = compileCode,
+    parseCode = parseCode,
+    runCode = runCode,
     debug = debug,
 }
