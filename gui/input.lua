@@ -74,6 +74,12 @@ local Input = {
                     if key == keys.backspace then
                         self.input = self.input:sub(1, #self.input - 1)
                     end
+                    if key == keys.tab then
+                        self.input = self.input .. "\t"
+                    end
+                    if key == keys.enter then
+                        self.focused = false
+                    end
                 end
             end
         end,
