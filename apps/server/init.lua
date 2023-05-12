@@ -74,6 +74,19 @@ function Server:removeClient(id)
         self.log:push("error", ("Client#%s doesn't exist"):format(id), "server.Server.removeClient")
     end
 end
+---@param self Server
+---@param id integer
+---@param content any
+---@return Client|nil
+function Server:transmit(id, content)
+    local client = self:client(id)
+    if client then
+        ---@diagnostic disable-next-line: undefined-field
+        rednet.send(os.getComputerID(), {head = "transmit", id = id, content = content}, NET_PROTOCOL)
+    else
+        self.log:push("error", ("trying to transmit message to unregistered client #%s"):format(id), "server.Server.sendClient")
+    end
+end
 
 ---@param self Server
 ---@param id integer
