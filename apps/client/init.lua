@@ -271,7 +271,7 @@ function Turtle:gui()
         connecting = connectingPage,
         connect = connectPage,
     }
-    interface.currentPage = interface.pages.connect
+    interface:changePage("connect")
     parallel.waitForAll(function ()
         interface.running = true
         while interface.running do
