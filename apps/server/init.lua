@@ -90,14 +90,19 @@ end
 ---@param self Server
 function Server:listen()
     ---@diagnostic disable-next-line: undefined-field
-    local hostName = "Server#"..tostring(os.getComputerID())
+    local computerID = os.getComputerID()
+    local hostName = "Server#"..tostring(computerID)
     rednet.host(NET_PROTOCOL, hostName)
     self.running = true
     self.log:push("debug", "started as "..hostName)
     while self.running do
         local id, msg = rednet.receive(NET_PROTOCOL, SERVER_TIMEOUT)
         if id then
-            if not self:blocked(id) then
+            if id == computerID then
+                if msg.head == "transmit" then
+                    rednet.send(msg.target, msg.content, NET_PROTOCOL)
+                end
+            elseif not self:blocked(id) then
                 if type(msg) == "table" then
                     if msg.head == "register" then
                         local success = self:addClient(id, client.Client.new(id, transform.Transform.default()))
