@@ -92,6 +92,7 @@ end
 ---@param self Turtle
 function Turtle:updateFuel()
     self.fuel = turtle.getFuelLevel()
+    self.fuelLimit = turtle.getFuelLimit()
 end
 ---@param self Turtle
 ---@return TurtleInfo
@@ -184,6 +185,8 @@ function Turtle:register()
 end
 ---@param self Turtle
 function Turtle:listen()
+    ---@diagnostic disable-next-line: undefined-field
+    os.queueEvent("update")
     while self.registered do
         local recvId, message
         while recvId ~= self.serverId do
@@ -213,14 +216,12 @@ function Turtle:listen()
                         end
                     end
                 end
-            end
-            if message.head == "command" then
+            elseif message.head == "command" then
                 if type(message.command) == "string" then
                     local success = shell.run(message.command)
                     rednet.send(recvId, { head = message.head, success = success }, NET_PROTOCOL)
                 end
-            end
-            if message.head == "call" then
+            elseif message.head == "call" then
                 if type(message.func) == "string" then
                     if type(self[message.func]) == "function" then
                         if type(message.args) == "table" then
@@ -275,8 +276,12 @@ function Turtle:gui()
             ---@param page Page
             update = function (_self, _gui, page, window)
                 self:register()
-                if not self.registered then gui.prompt.info("couldn't connect to #"..tostring(self.serverId)) end
-                _gui:changePage("connect")
+                if self.registered then
+                    _gui:exit()
+                else
+                    gui.prompt.info("couldn't connect to #"..tostring(self.serverId))
+                    _gui:changePage("main")
+                end
             end
         }
     }
@@ -288,18 +293,17 @@ function Turtle:gui()
         }
     }
     local interface = gui.GUI.new {
-        main = main,
+        main = connectPage,
         connecting = connectingPage,
-        connect = connectPage,
     }
-    interface:changePage("connect")
-    parallel.waitForAll(function ()
-        interface.running = true
-        while interface.running do
-            interface:run()
-        end
-    end, function ()
+    interface:run()
+    local interface = gui.GUI.new {
+        main = main
+    }
+    parallel.waitForAny(function ()
         self:listen()
+    end, function ()
+        interface:run()
     end)
     term.clear()
     term.setCursorPos(1, 1)
@@ -319,11 +323,12 @@ local function start()
     if not modem then error("no modem connected") end
     modem.open(64)
     peripheral.find("modem", rednet.open)
-    rednet.open("back")
     if not turtle then
         turtle = {
             ---@return number
             getFuelLevel = function() return 0 end,
+            ---@return number
+            getFuelLimit = function() return 20000 end,
             ---@return integer
             getSelectedSlot = function() return 1 end,
             ---@param i integer

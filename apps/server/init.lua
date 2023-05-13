@@ -36,7 +36,8 @@ function Server.new()
             ---@type table<string, table<integer, string>>
             events = {},
 
-            client = Server.client, addClient = Server.addClient,
+            client = Server.client, addClient = Server.addClient, removeClient = Server.removeClient,
+            transmit = Server.transmit,
             blocked = Server.blocked,
             listen = Server.listen, gui = Server.gui, eventListener = Server.eventListener,
             run = Server.run
@@ -107,7 +108,6 @@ function Server:listen()
     local hostName = "Server#"..tostring(computerID)
     rednet.host(NET_PROTOCOL, hostName)
     self.running = true
-    self.log:push("debug", "started as "..hostName)
     while self.running do
         local id, msg = rednet.receive(NET_PROTOCOL, SERVER_TIMEOUT)
         if id then
@@ -116,39 +116,55 @@ function Server:listen()
                     rednet.send(msg.target, msg.content, NET_PROTOCOL)
                 end
             elseif not self:blocked(id) then
-                if type(msg) == "table" then
-                    if msg.head == "register" then
-                        local success = self:addClient(id, client.Client.new(id, transform.Transform.default()))
-                        rednet.send(id, success, NET_PROTOCOL)
-                        if success then self.log:push("info", ("registered client #%s"):format(id), "server.Server.listen") end
-                    elseif msg.head == "info" then
-                        local client = self:client(id)
-                        if client then
-                            msg = turtleInfo(msg, client)
-                            client.transform.position.x = msg.x
-                            client.transform.position.y = msg.y
-                            client.transform.position.z = msg.z
-                            client.transform.direction = msg.direction
-                            client.inventory = msg.inventory
-                            client.fuel = msg.fuel
-                            client.status = msg.status
-                        else
-                            self.log:push("info", ("unregistered computer #%s is trying to send info"):format(id), "server.Server.listen")
-                        end
-                    elseif msg.head == "task" then
-                        if msg.status == "request" then
-                            local client = self:client(id)
-                            if client then
-                                rednet.send(id, table.remove(client.tasks), NET_PROTOCOL)
+                if msg.head == "register" then
+                    local success = self:addClient(id, client.Client.new(id, transform.Transform.default()))
+                    rednet.send(id, success, NET_PROTOCOL)
+                    if success then self.log:push("info", ("registered client #%s"):format(id), "server.Server.listen") end
+                else
+                    local currentClient = self:client(id)
+                    if currentClient then
+                        if type(msg) == "table" then
+                            if msg.head == "info" then
+                                local currentClient = self:client(id)
+                                if currentClient then
+                                    msg = turtleInfo(msg, currentClient)
+                                    currentClient.transform.position.x = msg.x
+                                    currentClient.transform.position.y = msg.y
+                                    currentClient.transform.position.z = msg.z
+                                    currentClient.transform.direction = msg.direction
+                                    currentClient.inventory = msg.inventory
+                                    currentClient.fuel = msg.fuel
+                                    currentClient.status = msg.status
+                                end
+                            elseif msg.head == "task" then
+                                if msg.status == "request" then
+                                    rednet.send(id, table.remove(currentClient.tasks), NET_PROTOCOL)
+                                end
+                            elseif msg.head == "command" then
+                                if type(msg.success) == "boolean" then
+                                    currentClient.log:push(msg.head, ("success: %s"):format(msg.success))
+                                else
+                                    currentClient.log:push("error", ("invalid command return, expected type %s, got %s"):format("boolean", type(msg.success)), "server.Server.listen")
+                                end
+                            elseif msg.head == "picolua" then
+                                if msg.err then
+                                    currentClient.log:push(msg.head, ("ERROR:%s %s"):format(tostring(msg.epos), tostring(msg.err)))
+                                else
+                                    currentClient.log:push(msg.head, ("returned: %s"):format(tostring(msg.value)))
+                                end
+                            elseif msg.head == "call" then
+                                if type(msg.returns) == "table" then
+                                    currentClient.log:push(msg.head, ("returned: "):format(tostring(msg.epos), table.concat(msg.returns, ", ")))
+                                else
+                                    currentClient.log:push("error", ("invalid call return, expected type %s, got %s"):format("table", type(msg.returns)), "server.Server.listen")
+                                end
                             else
-                                self.log:push("info", ("unregistered computer #%s is trying to request a task"):format(id), "server.Server.listen")
+                                currentClient.log:push("info", ("unhandled message: "):format(tostring(msg)), "server.Server.listen")
+                                currentClient:unhandledMessage(msg)
                             end
                         end
                     else
-                        local client = self:client(id)
-                        if client then
-                            client:unhandledMessage(msg)
-                        end
+                        self.log:push("info", ("unregistered computer #%s is trying to send a message"):format(id), "server.Server.listen")
                     end
                 end
             end
@@ -184,7 +200,7 @@ function Server:gui()
         return gui.Text.new {
             id = id, h = 2,
             text = msg:tostring(),
-            w = W / 2,
+            w = W / 3 * 2,
             fg = msg.type == "error" and (colors.red or colors.white) or colors.white
         }
     end
@@ -197,7 +213,7 @@ function Server:gui()
         gui.List.new {
             id = "clients",
             y = 2,
-            w = math.floor(W / 2), h = H - 1,
+            w = math.floor(W / 3), h = H - 1,
             list = {},
             ---@param list Element|List
             update = function (list, gui, page, window)
@@ -208,10 +224,14 @@ function Server:gui()
                 if #list.list > list.h then list.scroll = #list.list - list.h end
             end
         },
+        gui.Text.new {
+            x = math.ceil(W / 3), y = 1,
+            text = "LOGS:"
+        },
         gui.List.new {
             id = "logs",
-            x = math.ceil(W / 2), y = 2,
-            w = math.floor(W / 2), h = H - 1,
+            x = math.ceil(W / 3), y = 2,
+            w = math.floor(W / 3) * 2, h = H - 1,
             list = {},
             ---@param list Element|List
             update = function (list, gui, page, window)

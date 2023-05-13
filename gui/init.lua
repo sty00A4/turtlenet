@@ -37,6 +37,11 @@ function GUI.new(pages)
     )
 end
 ---@param self GUI
+---@param id string|integer
+function GUI:getElementById(id)
+    return self.currentPage:getElementById(id)
+end
+---@param self GUI
 function GUI:exit()
     self.currentPage.running = false
     self.running = false
