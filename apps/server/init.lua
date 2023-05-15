@@ -22,13 +22,14 @@ local Server = {
         __name = "server"
     }
 }
+---@param maxClients integer|nil
 ---@return Server
-function Server.new()
+function Server.new(maxClients)
     return setmetatable(
         ---@class Server
         {
             ---@type table<integer, Client>
-            clients = {},
+            clients = {}, maxClients = maxClients or 100,
             log = log.Log.new(),
             running = false,
             ---@type table<integer, boolean>
@@ -36,9 +37,10 @@ function Server.new()
             ---@type table<string, table<integer, string>>
             events = {},
 
+            setMaxClients = Server.setMaxClients,
             client = Server.client, addClient = Server.addClient, removeClient = Server.removeClient,
             transmit = Server.transmit,
-            blocked = Server.blocked,
+            block = Server.block, unblock = Server.unblock, blocked = Server.blocked,
             listen = Server.listen, gui = Server.gui, eventListener = Server.eventListener,
             run = Server.run
         },
@@ -46,6 +48,14 @@ function Server.new()
     )
 end
 
+---@param self Server
+---@param max integer
+function Server:setMaxClients(max)
+    if max < #self.clients then
+        self.log:push("error", ("max clients cannot be smaller than %s (amount of current clients registered)"):format(#self.clients), "server.Server.setMaxClients")
+    end
+    self.maxClients = max
+end
 ---@param self Server
 ---@param id integer
 ---@return Client|nil
@@ -56,6 +66,10 @@ end
 ---@param id integer
 ---@param client Client
 function Server:addClient(id, client)
+    if #self.clients >= self.maxClients then
+        self.log:push("error", "max clients reached", "server.Server.addClient")
+        return false
+    end
     if self.clients[id] then
         self.log:push("error", ("%s already exists"):format(client), "server.Server.addClient")
         return false
@@ -94,6 +108,12 @@ end
 function Server:block(id)
     self.blockedIds[id] = true
     self.log:push("info", ("Client#%s blocked"):format(id))
+end
+---@param self Server
+---@param id integer
+function Server:unblock(id)
+    self.blockedIds[id] = nil
+    self.log:push("info", ("Client#%s unblocked"):format(id))
 end
 ---@param self Server
 ---@param id integer

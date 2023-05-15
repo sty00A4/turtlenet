@@ -30,14 +30,15 @@ local Log = {
         __name = "log"
     }
 }
+---@param max integer|nil
 ---@return Log
-function Log.new()
+function Log.new(max)
     return setmetatable(
         ---@class Log
         {
             ---@type table<integer, Message>
-            log = {},
-            push = Log.push
+            log = {}, max = max or 500,
+            push = Log.push,
         },
         Log.mt
     )
@@ -48,6 +49,9 @@ end
 ---@param src string|nil
 function Log:push(type, text, src)
     table.insert(self.log, Message.new(type, text, os.time(), src))
+    if #self.log > self.max then
+        table.remove(self.log, 1)
+    end
 end
 
 return {
