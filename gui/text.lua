@@ -65,8 +65,8 @@ local Text = {
 ---@param opts Text
 function Text.new(opts)
     element.checkOptsElement(2, opts, Text.std, Text.types)
-    local button = element.Element.new(opts)
-    return button
+    local text = element.Element.new(opts)
+    return text
 end
 
 return Text

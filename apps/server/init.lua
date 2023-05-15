@@ -268,7 +268,7 @@ function Server:gui()
     interface:run()
 end
 
-local function start()
+local function start(flag)
     if ccemux then
         ccemux.detach("back")
         ccemux.attach("back", "wireless_modem", {
@@ -283,6 +283,12 @@ local function start()
     modem.open(64)
     peripheral.find("modem", rednet.open)
     local server = Server.new()
+    if flag == "test" then
+        server:addClient(6, client.Client.new(6, transform.Transform.default()))
+        server:addClient(1, client.Client.new(1, transform.Transform.default()))
+        server:addClient(8, client.Client.new(8, transform.Transform.default()))
+        server:addClient(4, client.Client.new(4, transform.Transform.default()))
+    end
     parallel.waitForAny(function()
         server:listen()
     end, function()

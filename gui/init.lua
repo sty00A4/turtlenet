@@ -5,8 +5,9 @@ local Text = require "turtlenet.gui.text"
 local Button = require "turtlenet.gui.button"
 local Input = require "turtlenet.gui.input"
 local List = require "turtlenet.gui.list"
+local Selector = require "turtlenet.gui.selector"
 
----@alias AnyElement Element|Button|Input|Text|Container|List
+---@alias AnyElement Element|Button|Input|Text|Container|List|Selector
 
 local GUI = {
     mt = {

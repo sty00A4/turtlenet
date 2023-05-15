@@ -104,8 +104,8 @@ local Input = {
 ---@param opts Input
 function Input.new(opts)
     element.checkOptsElement(2, opts, Input.std, Input.types)
-    local button = element.Element.new(opts)
-    return button
+    local input = element.Element.new(opts)
+    return input
 end
 
 return Input

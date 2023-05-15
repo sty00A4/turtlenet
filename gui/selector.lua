@@ -1,16 +1,20 @@
 local element = require "turtlenet.gui.element"
 
-local List = {
-    ---@class List
+local Selector = {
+    ---@class Selector
     std = {
         ---@type table<integer, AnyElement>
         list = {},
+        selected = {},
+        __shift = false,
+        __ctrl = false,
         scroll = 0,
         w = 12,
         h = 1,
         fg = colors.white,
         bg = colors.black,
-        ---@param self Element|List
+        selectColor = colors.gray,
+        ---@param self Element|Selector
         ---@param gui GUI
         ---@param page Page
         ---@param window table|nil
@@ -21,10 +25,14 @@ local List = {
             local _, h = element.absoluteTransform(self.transform, self.w, self.h)
 
             for i = 1, h do
+                local idx = i + self.scroll
                 term.setCursorPos(x, y + i - 1)
-                local element = self.list[i + self.scroll]
+                local element = self.list[idx]
                 if element then
                     element.x, element.y = term.getCursorPos()
+                    if table.contains(self.selected, idx) then
+                        term.setBackgroundColor(self.selectColor)
+                    end
                     element:draw(gui, page, window)
                 end
             end
@@ -33,20 +41,45 @@ local List = {
             term.setTextColor(fg)
             term.setBackgroundColor(bg)
         end,
-        ---@param self Element|List
+        ---@param self Element|Selector
         ---@param gui GUI
         ---@param page Page
         ---@param events table<integer, any>
         ---@param window table|nil
         event = function (self, gui, page, events, window)
             local event, p1, p2, p3 = events[1], events[2], events[3], events[4]
+            if event == "key" then
+                local key = p1
+                if key == keys.leftShift or key == keys.rightShift then
+                    self.__shift = true
+                elseif key == keys.leftCtrl or key == keys.rightCtrl then
+                    self.__ctrl = true
+                end
+            end
+            if event == "key_up" then
+                local key = p1
+                if key == keys.leftShift or key == keys.rightShift then
+                    self.__shift = false
+                elseif key == keys.leftCtrl or key == keys.rightCtrl then
+                    self.__ctrl = false
+                end
+            end
             if event == "mouse_click" then
                 local mb, mx, my = p1, p2, p3
                 if mb == 1 then
-                    local over, element = self:mouseOver(mx, my, window)
-                    if over and element then
-                        if type(element.onClick) == "function" then
-                            return element:onClick(gui, page, window)
+                    local over, element, idx = self:mouseOver(mx, my, window)
+                    if over and element and idx then
+                        if self.__shift then
+                            local lastIdx = self.selected[#self.selected]
+                            for i = lastIdx, idx, (idx > lastIdx and 1 or -1) do
+                                if i ~= lastIdx then
+                                    table.insert(self.selected, i)
+                                end
+                            end
+                        elseif self.__ctrl then
+                            table.insert(self.selected, idx)
+                        else
+                            self.selected = { idx }
                         end
                     end
                 end
@@ -65,7 +98,7 @@ local List = {
                 end
             end
         end,
-        ---@param self Element|List
+        ---@param self Element|Selector
         ---@param mx integer
         ---@param my integer
         ---@param window table|nil
@@ -94,14 +127,14 @@ local List = {
         mouseOver = { value = "function", type = "type" },
     },
     mt = {
-        __name = "List"
+        __name = "Selector"
     }
 }
----@param opts List
-function List.new(opts)
-    element.checkOptsElement(2, opts, List.std, List.types)
-    local list = element.Element.new(opts)
-    return list
+---@param opts Selector
+function Selector.new(opts)
+    element.checkOptsElement(2, opts, Selector.std, Selector.types)
+    local selector = element.Element.new(opts)
+    return selector
 end
 
-return List
+return Selector

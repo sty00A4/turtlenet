@@ -6,7 +6,7 @@ local turtlenet = require "turtlenet"
 
 local args = {...}
 if args[1] == "server" then
-    return turtlenet.server.start()
+    return turtlenet.server.start(args[2])
 elseif args[1] == "client" then
     return turtlenet.client.start()
 elseif args[1] == "picolua" then

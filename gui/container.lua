@@ -82,8 +82,8 @@ function Container.new(opts)
     local x, y = element.absolutePosition(opts.position, opts.x, opts.y)
     local w, h = element.absoluteTransform(opts.transform, opts.w, opts.h)
     opts.window = opts.window or window.create(term.current, x, y, w, h)
-    local button = element.Element.new(opts)
-    return button
+    local container = element.Element.new(opts)
+    return container
 end
 
 return Container
