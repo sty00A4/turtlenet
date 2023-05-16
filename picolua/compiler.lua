@@ -248,6 +248,29 @@ function Compiler:statement(statement)
         local addr = self:currentPos()
         local typ, err, epos = self:expression(cond) if err then return nil, err, epos end
         writeCode(self.code, statement.pos.ln.start, statement.pos.col.start, ByteCode.JumpIfNot, addr)
+    elseif statement.type == "function-node" then
+        --       JUMP @end
+        --       (params) {
+        --         SETVAR <dyn param addr>
+        --       }
+        --       [body]
+        --       ? {
+        --         NIL
+        --         RETURN _ 1
+        --       }
+        -- @end
+        local id, params, body = statement.id, statement.params, statement.body
+        local jumpAddr = self:currentPos()
+        writeCode(self.code, statement.pos.ln.start, statement.pos.col.start, ByteCode.None)
+        for _, param in ipairs(params) do
+            -- dunno yet
+        end
+        local _, err, epos = self:statement(body) if err then return nil, err, epos end
+        if self.code[#self.code - INSTRUCTION_SIZE + 1] ~= ByteCode.Return then
+            writeCode(self.code, statement.pos.ln.start, statement.pos.col.start, ByteCode.Nil)
+            writeCode(self.code, statement.pos.ln.start, statement.pos.col.start, ByteCode.Return, nil, 1)
+        end
+        overwriteCode(self.code, jumpAddr, statement.pos.ln.start, statement.pos.col.start, ByteCode.Jump, self:currentPos())
     else
         error("unknown statement: "..statement.type)
     end

@@ -105,7 +105,7 @@ function Parser:block(endTokens)
         local node, err, epos = self:statement() if err then return nil, err, epos end
         if not node then break end
         pos:extend(node.pos)
-        local err, epos = self:endOfLine() if err then return nil, err, epos end
+        local _, err = self:endOfLine() if err then return nil, err end
         while not self:token() and self.ln <= #self.tokens do self:advanceLine() end
         table.insert(block, node)
         local token, err = self:check() if err then return nil, err end
@@ -265,8 +265,35 @@ function Parser:statement(endTokens)
     elseif token.kind == TokenKind.Wait then
         self:advance()
         local cond, err, epos = self:expression() if err then return nil, err, epos end
-        if not cond then return nil, ("expected expression, got %s"):format(self:token() and TokenKind.tostring(self:token().kind) or "end of input") end
+        if not cond then error "no cond" end
+        pos:extend(cond.pos)
         return nodes.WaitNode.new(cond, pos)
+    elseif token.kind == TokenKind.Function then
+        self:advance()
+        local id, err, epos = self:id() if err then return nil, err, epos end
+        if not id then error "no id" end
+        local params = {}
+        local token = self:token()
+        local body
+        if token then
+            if token.kind == TokenKind.Call then
+                self:advance()
+                while self:token() do
+                    local param, err, epos = self:id() if err then return nil, err, epos end
+                    if not param then error "no param" end
+                    table.insert(params, param)
+                end
+            else
+                body, err, epos = self:block { TokenKind.End } if err then return nil, err, epos end
+                if not body then error "no body" end
+            end
+        else
+            self:advanceLine()
+            body, err, epos = self:block { TokenKind.End } if err then return nil, err, epos end
+            if not body then error "no body" end
+            self:advance()
+        end
+        return nodes.FunctionNode.new(id, params, body, pos)
     else
         return nil, ("unexpected %s"):format(TokenKind.tostring(token.kind)), token.pos
     end

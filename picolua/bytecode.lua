@@ -18,7 +18,7 @@ local ByteCode = {
     Jump = 0x02, -- addr
     JumpIf = 0x03, -- addr
     JumpIfNot = 0x04, -- addr
-    Return = 0x05,
+    Return = 0x05, -- _ amount
 
     Get = 0x10, -- constAddr
     Var = 0x11, -- varAddr

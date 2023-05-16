@@ -463,9 +463,29 @@ function WaitNode.new(cond, pos)
         WaitNode.mt
     )
 end
+local FunctionNode = {
+    mt = {
+        __name = "function-node"
+    }
+}
+---@param id IDNode|LocalIDNode
+---@param params table<integer, IDNode|LocalIDNode>
+---@param body StatementNode
+---@param pos Position
+---@return FunctionNode
+function FunctionNode.new(id, params, body, pos)
+    return setmetatable(
+        ---@class FunctionNode
+        {
+            type = FunctionNode.mt.__name,
+            id = id, params = params, body = body, pos = pos,
+        },
+        FunctionNode.mt
+    )
+end
 
 
----@alias StatementNode BlockNode|CallNode|AssignNode|IfNode|WhileNode|ForNode|RepeatNode|WaitNode
+---@alias StatementNode BlockNode|CallNode|AssignNode|IfNode|WhileNode|ForNode|RepeatNode|WaitNode|FunctionNode
 
 local ChunkNode = {
     mt = {
@@ -501,5 +521,6 @@ return {
     CallNode = CallNode, AssignNode = AssignNode,
     IfNode = IfNode, WhileNode = WhileNode, ForNode = ForNode,
     RepeatNode = RepeatNode, WaitNode = WaitNode,
-    ChunkNode = ChunkNode
+    ChunkNode = ChunkNode,
+    FunctionNode = FunctionNode
 }
