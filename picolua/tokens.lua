@@ -14,8 +14,6 @@ TokenKind = {
     ---@class TokenKind
     Local = {},
     ---@class TokenKind
-    Var = {},
-    ---@class TokenKind
     Equal = {},
     ---@class TokenKind
     Call = {},
@@ -114,9 +112,6 @@ TokenKind = {
             ["not"] = function()
                 return TokenKind.Not
             end,
-            ["var"] = function()
-                return TokenKind.Var
-            end,
             ["do"] = function()
                 return TokenKind.Do
             end,
@@ -167,8 +162,6 @@ TokenKind = {
             return "string"
         elseif kind == TokenKind.Local then
             return "local"
-        elseif kind == TokenKind.Var then
-            return "var"
         elseif kind == TokenKind.Equal then
             return "equal"
         elseif kind == TokenKind.Call then

@@ -147,22 +147,6 @@ function Compiler:statement(statement)
         for _, statement in ipairs(nodes) do
             local _, err, epos = self:statement(statement) if err then return nil, err, epos end
         end
-    elseif statement.type == "local-assign-node" then
-        local paths, values = statement.paths, statement.values
-        for i = 1, #paths do
-            local path, value = paths[i], values[i]
-            if value then
-                local typ, err, epos = self:expression(value) if err then return nil, err, epos end
-            else
-                writeCode(self.code, path.pos.ln.start, path.pos.col.start, ByteCode.Nil)
-            end
-            if path.type == "local-id-node" then
-                local addr = self:newVar(path.id)
-                writeCode(self.code, path.pos.ln.start, path.pos.col.start, ByteCode.SetVar, addr)
-            else
-                return nil, "expected local id", path.pos
-            end
-        end
     elseif statement.type == "assign-node" then
         local paths, values = statement.paths, statement.values
         for i = 1, #paths do
@@ -178,7 +162,7 @@ function Compiler:statement(statement)
             elseif path.type == "local-id-node" then
                 local addr = self:getVar(path.id)
                 if not addr then
-                    return nil, ("cannot find %q in the current scope"):format(path.id), path.pos
+                    addr = self:newVar(path.id)
                 end
                 writeCode(self.code, path.pos.ln.start, path.pos.col.start, ByteCode.SetVar, addr)
             else

@@ -177,50 +177,6 @@ function Parser:statement(endTokens)
             pos:extend(path.pos)
             return nodes.CallNode.new(path, {}, pos)
         end
-    elseif token.kind == TokenKind.Var then
-        self:advance()
-        local paths = {}
-        local path, err, epos = self:id() if err then return nil, err, epos end
-        if not path then error "no path" end
-        if path.type ~= "local-id-node" then return nil, "expected local id", path.pos end
-        table.insert(paths, path)
-        local token = self:token()
-        if token then
-            while token.kind == TokenKind.Seprate do
-                self:advance()
-                local path, err, epos = self:path() if err then return nil, err, epos end
-                if not path then error "no path" end
-                table.insert(paths, path)
-                token = self:token()
-                if not token then break end
-            end
-            if token then
-                if token.kind == TokenKind.Equal then
-                    local values = {}
-                    self:advance()
-                    local value, err, epos = self:expression() if err then return nil, err, epos end
-                    if not value then error "no expression" end
-                    table.insert(values, value)
-                    pos:extend(value.pos)
-                    local token = self:token()
-                    if token then
-                        while token.kind == TokenKind.Seprate do
-                            self:advance()
-                            local value, err, epos = self:expression() if err then return nil, err, epos end
-                            if not value then error "no expression" end
-                            table.insert(values, value)
-                            pos:extend(value.pos)
-                            if not token then break end
-                        end
-                    end
-                    return nodes.LocalAssignNode.new(paths, values, pos)
-                else
-                    return nil, ("unexpected %s"):format(TokenKind.tostring(token.kind)), token.pos
-                end
-            end
-        else
-            return nil, ("expected %s, not end of line"):format(TokenKind.tostring(TokenKind.Equal)), token.pos
-        end
     elseif token.kind == TokenKind.If then
         self:advance()
         local conds = {}
