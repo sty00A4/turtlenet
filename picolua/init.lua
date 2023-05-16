@@ -17,46 +17,46 @@ local function compile(path)
     local file = location.File.new(path)
 
     local _tokens, err, epos = lexer.lex(file, text) if err then return nil, err, epos end
-    if not _tokens then return end
-    local ast, err, epos = parser.parse(file, _tokens)
-    if not ast then return end
+    if not _tokens then error "no tokens" end
+    local ast, err, epos = parser.parse(file, _tokens) if err then return nil, err, epos end
+    if not ast then error "no ast" end
     return compiler.compile(file, ast)
 end
 ---@param code string
 local function compileCode(code)
     local file = location.File.new("<input>")
     local _tokens, err, epos = lexer.lex(file, code) if err then return nil, err, epos end
-    if not _tokens then return end
-    local ast, err, epos = parser.parse(file, _tokens)
-    if not ast then return end
+    if not _tokens then error "no tokens" end
+    local ast, err, epos = parser.parse(file, _tokens) if err then return nil, err, epos end
+    if not ast then error "no ast" end
     return compiler.compile(file, ast)
 end
 ---@param code string
 local function parseCode(code)
     local file = location.File.new("<input>")
     local _tokens, err, epos = lexer.lex(file, code) if err then return nil, err, epos end
-    if not _tokens then return end
+    if not _tokens then error "no tokens" end
     return parser.parse(file, _tokens)
 end
 ---@param path string
 local function run(path)
     local compiler, err, epos = compile(path) if err then return nil, err, epos end
-    if not compiler then return end
+    if not compiler then error "no compiler" end
     return program.run(compiler.file, compiler)
 end
 ---@param code string
 local function runCode(code)
     local compiler, err, epos = compileCode(code) if err then return nil, err, epos end
-    if not compiler then return end
+    if not compiler then error "no compiler" end
     return program.run(compiler.file, compiler)
 end
 ---@param path string
 local function debug(path)
     if not term then print "debug for this system not supported" return end
     local compiler, err, epos = compile(path) if err then
-        print(err) return
+        print(epos, err) return
     end
-    if not compiler then return end
+    if not compiler then error "no compiler" end
     local program = program.Program.new(compiler.file, compiler)
 
     local W, H = term.getSize()

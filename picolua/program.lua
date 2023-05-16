@@ -59,9 +59,11 @@ function Program.new(file, compiler)
             stack = {},
             ---@type table<integer, Addr>
             callStack = {},
+            ---@type table<VarAddr, any>
+            vars = {},
 
             push = Program.push, pop = Program.pop, popSafe = Program.popSafe,
-            const = Program.const,
+            const = Program.const, var = Program.var, setVar = Program.setVar,
             newCall = Program.newCall, returnAddr = Program.returnAddr,
             step = Program.step, run = Program.run,
         },
@@ -86,6 +88,14 @@ end
 ---@param self Program
 function Program:const(addr)
     return self.consts[addr]
+end
+---@param self Program
+function Program:var(addr)
+    return self.vars[addr]
+end
+---@param self Program
+function Program:setVar(addr, value)
+    self.vars[addr] = value
 end
 ---@param self Program
 ---@param addr Addr
@@ -151,10 +161,20 @@ function Program:step()
             self:push(_G[key])
         end
         self.ip = self.ip + INSTRUCTION_SIZE
+    elseif instr == ByteCode.Var then
+        for _ = 1, count do
+            self:push(self:var(addr))
+        end
+        self.ip = self.ip + INSTRUCTION_SIZE
     elseif instr == ByteCode.Set then
         local key = self:const(addr)
         for _ = 1, count do
             _G[key] = self:popSafe()
+        end
+        self.ip = self.ip + INSTRUCTION_SIZE
+    elseif instr == ByteCode.SetVar then
+        for _ = 1, count do
+            self:setVar(addr, self:popSafe())
         end
         self.ip = self.ip + INSTRUCTION_SIZE
     elseif instr == ByteCode.Field then

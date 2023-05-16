@@ -24,7 +24,7 @@ elseif args[1] == "picolua" then
     local targetPath = args[3]
     if targetPath then
         local compiler, err, epos = turtlenet.picolua.compile(path) if err then
-            print(err) return
+            print(epos, err) return
         end
         if not compiler then return end
         local file = io.open(targetPath, "wb")
@@ -36,7 +36,7 @@ elseif args[1] == "picolua" then
         print(("successfully compiled %q to %q!"):format(path, targetPath))
     else
         local value, err, epos = turtlenet.picolua.run(path) if err then
-            print(err) return
+            print(epos, err) return
         end
         if type(value) ~= "nil" then print(value) end
     end

@@ -20,6 +20,28 @@ function IDNode.new(id, pos)
         IDNode.mt
     )
 end
+local LocalIDNode = {
+    mt = {
+        __name = "local-id-node",
+        ---@param self LocalIDNode
+        __tostring = function (self)
+            return "@"..self.id
+        end
+    }
+}
+---@param id string
+---@param pos Position
+---@return LocalIDNode
+function LocalIDNode.new(id, pos)
+    return setmetatable(
+        ---@class LocalIDNode
+        {
+            type = LocalIDNode.mt.__name,
+            id = id, pos = pos
+        },
+        LocalIDNode.mt
+    )
+end
 
 local FieldNode = {
     mt = {
@@ -68,7 +90,7 @@ function IndexNode.new(head, index, pos)
     )
 end
 
----@alias PathNode FieldNode|IndexNode|IDNode
+---@alias PathNode FieldNode|IndexNode|IDNode|LocalIDNode
 
 local NilNode = {
     mt = {
@@ -324,6 +346,37 @@ function AssignNode.new(paths, values, pos)
         AssignNode.mt
     )
 end
+local LocalAssignNode = {
+    mt = {
+        __name = "local-assign-node",
+        ---@param self LocalAssignNode
+        __tostring = function (self)
+            local paths = ""
+            for i, path in ipairs(self.paths) do
+                paths = paths .. tostring(path) .. (i == #self.paths and "" or ", ")
+            end
+            local values = ""
+            for i, value in ipairs(self.values) do
+                values = values .. tostring(value) .. (i == #self.values and "" or ", ")
+            end
+            return ("var %s = %s"):format(paths, values)
+        end
+    }
+}
+---@param paths table<integer, LocalIDNode>
+---@param values table<integer, EvalNode>
+---@param pos Position
+---@return LocalAssignNode
+function LocalAssignNode.new(paths, values, pos)
+    return setmetatable(
+        ---@class LocalAssignNode
+        {
+            type = LocalAssignNode.mt.__name,
+            paths = paths, values = values, pos = pos,
+        },
+        LocalAssignNode.mt
+    )
+end
 
 local IfNode = {
     mt = {
@@ -443,7 +496,7 @@ function WaitNode.new(cond, pos)
 end
 
 
----@alias StatementNode BlockNode|CallNode|AssignNode|IfNode|WhileNode|ForNode|RepeatNode|WaitNode
+---@alias StatementNode BlockNode|CallNode|AssignNode|LocalAssignNode|IfNode|WhileNode|ForNode|RepeatNode|WaitNode
 
 local ChunkNode = {
     mt = {
@@ -472,11 +525,11 @@ function ChunkNode.new(nodes)
 end
 
 return {
-    IDNode = IDNode, FieldNode = FieldNode, IndexNode = IndexNode,
+    IDNode = IDNode, LocalIDNode = LocalIDNode, FieldNode = FieldNode, IndexNode = IndexNode,
     NumberNode = NumberNode, BooleanNode = BooleanNode, StringNode = StringNode,
     BinaryNode = BinaryNode, UnaryNode = UnaryNode, CallExprNode = CallExprNode,
     BlockNode = BlockNode,
-    CallNode = CallNode, AssignNode = AssignNode,
+    CallNode = CallNode, AssignNode = AssignNode, LocalAssignNode = LocalAssignNode,
     IfNode = IfNode, WhileNode = WhileNode, ForNode = ForNode,
     RepeatNode = RepeatNode, WaitNode = WaitNode,
     ChunkNode = ChunkNode

@@ -21,13 +21,15 @@ local ByteCode = {
     Return = 0x05,
 
     Get = 0x10, -- constAddr
-    Set = 0x11,
-    Field = 0x12, -- constAddr
-    SetField = 0x13, -- constAddr
-    Index = 0x14,
-    SetIndex = 0x15,
-    Call = 0x16, -- funcAddr argAmount
-    CallReturn = 0x17, -- funcAddr argAmount
+    Var = 0x11, -- varAddr
+    Set = 0x12,
+    SetVar = 0x13,
+    Field = 0x14, -- constAddr
+    SetField = 0x15, -- constAddr
+    Index = 0x16,
+    SetIndex = 0x17,
+    Call = 0x18, -- funcAddr argAmount
+    CallReturn = 0x19, -- funcAddr argAmount
 
     Nil = 0x20,
     Number = 0x21, -- value

@@ -63,7 +63,9 @@ function Lexer:next()
     local c = self:get() if not c then return nil end
     local pos = self:pos()
     self:advance()
-    if c == "=" then
+    if c == "@" then
+        return Token.new(TokenKind.Local, nil, pos)
+    elseif c == "=" then
         if self:get() == "=" then
             pos:extend(self:pos())
             self:advance()

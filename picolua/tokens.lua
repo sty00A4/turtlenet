@@ -12,6 +12,10 @@ TokenKind = {
     String = {},
     
     ---@class TokenKind
+    Local = {},
+    ---@class TokenKind
+    Var = {},
+    ---@class TokenKind
     Equal = {},
     ---@class TokenKind
     Call = {},
@@ -110,6 +114,9 @@ TokenKind = {
             ["not"] = function()
                 return TokenKind.Not
             end,
+            ["var"] = function()
+                return TokenKind.Var
+            end,
             ["do"] = function()
                 return TokenKind.Do
             end,
@@ -158,14 +165,20 @@ TokenKind = {
             return "boolean"
         elseif kind == TokenKind.String then
             return "string"
+        elseif kind == TokenKind.Local then
+            return "local"
+        elseif kind == TokenKind.Var then
+            return "var"
         elseif kind == TokenKind.Equal then
             return "equal"
         elseif kind == TokenKind.Call then
             return "call"
         elseif kind == TokenKind.Seprate then
             return "seperate"
-        elseif kind == TokenKind.Expr then
-            return "expr"
+        elseif kind == TokenKind.ExprIn then
+            return "expr-in"
+        elseif kind == TokenKind.ExprOut then
+            return "expr-out"
         elseif kind == TokenKind.Add then
             return "add"
         elseif kind == TokenKind.Sub then
@@ -231,6 +244,11 @@ TokenKind = {
         elseif kind == TokenKind.Wait then
             return "wait"
         else
+            for name, enum in pairs(TokenKind) do
+                if kind == enum then
+                    return name
+                end
+            end
             return "?"
         end
     end

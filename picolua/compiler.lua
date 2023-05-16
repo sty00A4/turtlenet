@@ -52,8 +52,17 @@ function Compiler.new(file)
             code = {},
             ---@type table<ConstAddr, any>
             consts = {},
+            ---@type table<integer, table<string, VarAddr>>
+            scopes = {{}},
+            ---@type table<VarAddr, boolean>
+            addrs = {},
 
             newConst = Compiler.newConst,
+            pushScope = Compiler.pushScope,
+            popScope = Compiler.popScope,
+            getVar = Compiler.getVar,
+            newVar = Compiler.newVar,
+            removeAddr = Compiler.removeAddr,
             currentPos = Compiler.currentPos,
 
             chunk = Compiler.chunk,
@@ -79,6 +88,45 @@ function Compiler:newConst(value)
     return addr
 end
 ---@param self Compiler
+function Compiler:pushScope()
+    table.insert(self.scopes, {})
+end
+---@param self Compiler
+function Compiler:popScope()
+    local scope = table.remove(self.scopes)
+    if scope then
+        for _, addr in pairs(scope) do
+            self:removeAddr(addr)
+        end
+    end
+end
+---@param self Compiler
+---@return VarAddr|nil
+function Compiler:getVar(id)
+    for i = #self.scopes, 1, -1 do
+        local scope = self.scopes[i]
+        if scope then
+            if scope[id] then
+                return scope[id]
+            end
+        end
+    end
+end
+---@param self Compiler
+---@return VarAddr
+function Compiler:newVar(id)
+    local addr = 0
+    while self.addrs[addr] do
+        addr = addr + 1
+    end
+    self.scopes[#self.scopes][id] = addr
+    return addr
+end
+---@param self Compiler
+function Compiler:removeAddr(addr)
+    self.addrs[addr] = nil
+end
+---@param self Compiler
 function Compiler:currentPos()
     return #self.code + 1
 end
@@ -99,8 +147,23 @@ function Compiler:statement(statement)
         for _, statement in ipairs(nodes) do
             local _, err, epos = self:statement(statement) if err then return nil, err, epos end
         end
-    end
-    if statement.type == "assign-node" then
+    elseif statement.type == "local-assign-node" then
+        local paths, values = statement.paths, statement.values
+        for i = 1, #paths do
+            local path, value = paths[i], values[i]
+            if value then
+                local typ, err, epos = self:expression(value) if err then return nil, err, epos end
+            else
+                writeCode(self.code, path.pos.ln.start, path.pos.col.start, ByteCode.Nil)
+            end
+            if path.type == "local-id-node" then
+                local addr = self:newVar(path.id)
+                writeCode(self.code, path.pos.ln.start, path.pos.col.start, ByteCode.SetVar, addr)
+            else
+                return nil, "expected local id", path.pos
+            end
+        end
+    elseif statement.type == "assign-node" then
         local paths, values = statement.paths, statement.values
         for i = 1, #paths do
             local path, value = paths[i], values[i]
@@ -112,20 +175,24 @@ function Compiler:statement(statement)
             if path.type == "id-node" then
                 local addr = self:newConst(path.id)
                 writeCode(self.code, path.pos.ln.start, path.pos.col.start, ByteCode.Set, addr)
+            elseif path.type == "local-id-node" then
+                local addr = self:getVar(path.id)
+                if not addr then
+                    return nil, ("cannot find %q in the current scope"):format(path.id), path.pos
+                end
+                writeCode(self.code, path.pos.ln.start, path.pos.col.start, ByteCode.SetVar, addr)
             else
                 return nil, "field assignment not supported yet", path.pos
             end
         end
-    end
-    if statement.type == "call-node" then
+    elseif statement.type == "call-node" then
         local head, args = statement.head, statement.args
         for _, arg in ipairs(args) do
             local typ, err, epos = self:expression(arg) if err then return nil, err, epos end
         end
         local _, err, epos = self:path(head) if err then return nil, err, epos end
         writeCode(self.code, statement.pos.ln.start, statement.pos.col.start, ByteCode.Call, 0, #args)
-    end
-    if statement.type == "repeat-node" then
+    elseif statement.type == "repeat-node" then
         --       [count]
         -- @body [body]
         --       NUMBER 1        // count - 1
@@ -146,8 +213,7 @@ function Compiler:statement(statement)
         writeCode(self.code, statement.pos.ln.start, statement.pos.col.start, ByteCode.LE)
         writeCode(self.code, statement.pos.ln.start, statement.pos.col.start, ByteCode.JumpIfNot, addr)
         writeCode(self.code, statement.pos.ln.start, statement.pos.col.start, ByteCode.Drop)
-    end
-    if statement.type == "if-node" then
+    elseif statement.type == "if-node" then
         --       (conds, cases) {
         --         [cond]
         --         JUMPIFNOT @next
@@ -176,8 +242,7 @@ function Compiler:statement(statement)
         for _, addr in ipairs(addExitAddrQueue) do
             self.code[addr + INSTRUCTION_ADDR_OFFSET] = exitAddr
         end
-    end
-    if statement.type == "while-node" then
+    elseif statement.type == "while-node" then
         -- @cond [cond]
         --       JUMPIFNOT @exit
         -- @body [body]
@@ -192,21 +257,22 @@ function Compiler:statement(statement)
         local exitAddr = self:currentPos()
         writeCode(self.code, statement.pos.ln.start, statement.pos.col.start, ByteCode.Jump, condAddr)
         overwriteCode(self.code, bodyAddr, statement.pos.ln.start, statement.pos.col.start, ByteCode.JumpIfNot, exitAddr + INSTRUCTION_SIZE * 2)
-    end
-    if statement.type == "wait-node" then
+    elseif statement.type == "wait-node" then
         -- @cond [cond]
         --       JUMPIFNOT @cond
         local cond = statement.cond
         local addr = self:currentPos()
         local typ, err, epos = self:expression(cond) if err then return nil, err, epos end
         writeCode(self.code, statement.pos.ln.start, statement.pos.col.start, ByteCode.JumpIfNot, addr)
+    else
+        error("unknown statement: "..statement.type)
     end
 end
 ---@param self Compiler
 ---@param expression EvalNode
 function Compiler:expression(expression)
     if type(expression) == "nil" then error("expression is nil", 2) end
-    if expression.type == "id-node" or expression.type == "field-node" or expression.type == "index-node" then
+    if expression.type == "id-node" or expression.type == "local-id-node" or expression.type == "field-node" or expression.type == "index-node" then
         ---@diagnostic disable-next-line: param-type-mismatch
         return self:path(expression)
     elseif expression.type == "number-node" then
@@ -269,6 +335,8 @@ function Compiler:expression(expression)
         end
         local typ, err, epos = self:expression(head) if err then return nil, err, epos end
         writeCode(self.code, expression.pos.ln.start, expression.pos.col.start, ByteCode.CallReturn, 0, #args)
+    else
+        error("unknown expression: "..expression.type)
     end
 end
 ---@param self Compiler
@@ -278,6 +346,10 @@ function Compiler:path(path)
         local id = path.id
         local addr = self:newConst(id)
         writeCode(self.code, path.pos.ln.start, path.pos.col.start, ByteCode.Get, addr)
+    elseif path.type == "local-id-node" then
+        local id = path.id
+        local addr = self:getVar(id)
+        writeCode(self.code, path.pos.ln.start, path.pos.col.start, ByteCode.Var, addr)
     elseif path.type == "field-node" then
         local head, field = path.head, path.field
         local _, err, epos = self:path(head) if err then return nil, err, epos end
@@ -288,6 +360,8 @@ function Compiler:path(path)
         local _, err, epos = self:path(head) if err then return nil, err, epos end
         local typ, err, epos = self:expression(index) if err then return nil, err, epos end
         writeCode(self.code, path.pos.ln.start, path.pos.col.start, ByteCode.Index)
+    else
+        error("unknown path: "..path.type)
     end
 end
 
