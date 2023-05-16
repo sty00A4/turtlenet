@@ -262,6 +262,11 @@ function Parser:statement(endTokens)
             end
         end
         return nodes.RepeatNode.new(count, body, pos)
+    elseif token.kind == TokenKind.Wait then
+        self:advance()
+        local cond, err, epos = self:expression() if err then return nil, err, epos end
+        if not cond then return nil, ("expected expression, got %s"):format(self:token() and TokenKind.tostring(self:token().kind) or "end of input") end
+        return nodes.WaitNode.new(cond, pos)
     else
         return nil, ("unexpected %s"):format(TokenKind.tostring(token.kind)), token.pos
     end

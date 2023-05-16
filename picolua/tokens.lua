@@ -89,6 +89,8 @@ TokenKind = {
     Repeat = {},
     ---@class TokenKind
     Wait = {},
+    ---@class TokenKind
+    Function = {},
 
     ---@param id string
     ---@return TokenKind, any
@@ -141,6 +143,9 @@ TokenKind = {
             end,
             ["wait"] = function()
                 return TokenKind.Wait
+            end,
+            ["function"] = function()
+                return TokenKind.Function
             end,
         }
         local handle = kw[id] if not handle then
@@ -236,6 +241,8 @@ TokenKind = {
             return "repeat"
         elseif kind == TokenKind.Wait then
             return "wait"
+        elseif kind == TokenKind.Function then
+            return "function"
         else
             for name, enum in pairs(TokenKind) do
                 if kind == enum then
