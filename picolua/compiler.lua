@@ -271,6 +271,8 @@ function Compiler:statement(statement)
             writeCode(self.code, statement.pos.ln.start, statement.pos.col.start, ByteCode.Return, nil, 1)
         end
         overwriteCode(self.code, jumpAddr, statement.pos.ln.start, statement.pos.col.start, ByteCode.Jump, self:currentPos())
+        writeCode(self.code, statement.pos.ln.start, statement.pos.col.start, ByteCode.Number, jumpAddr)
+        writeCode(self.code, statement.pos.ln.start, statement.pos.col.start, ByteCode.SetVar, self:newVar(id.id))
     else
         error("unknown statement: "..statement.type)
     end

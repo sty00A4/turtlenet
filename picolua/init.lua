@@ -128,7 +128,16 @@ local function debug(path)
             term.redirect(terminalWindow)
             term.clear()
             term.setCursorPos(1, 1)
-            program:step()
+            local _, err, epos = program:step() if err then
+                term.redirect(mainWindow)
+                codeWindow.setVisible(false)
+                stackWindow.setVisible(false)
+                terminalWindow.setVisible(false)
+                term.clear()
+                term.setCursorPos(1, 1)
+                print(err, epos)
+                return nil, err, epos
+            end
             term.redirect(mainWindow)
             terminalWindow.setVisible(false)
         end

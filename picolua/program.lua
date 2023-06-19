@@ -121,7 +121,7 @@ end
 ---@param self Program
 function Program:run()
     while self.ip <= #self.code do
-        self:step()
+        local _, err, epos = self:step() if err then return nil, err, epos end
         if self.halt then break end
     end
 end
@@ -199,22 +199,26 @@ function Program:step()
     --- todo: Field and Index
     elseif instr == ByteCode.Call or instr == ByteCode.CallReturn then
         local func = self:pop()
-        if type(func) ~= "function" then
-            return nil, ("attempt to call a %s"):format(type(func)), Position.new(self.file, ln, ln, col, col)
-        end
         local args = {}
         for i = count, 1, -1 do
             args[i] = self:pop()
         end
-        local returns = { pcall(func, table.unpack(args)) }
-        local success = table.remove(returns, 1)
-        if not success then
-            return nil, fromLuaError(returns), Position.new(self.file, ln, ln, col, col)
-        end
-        if instr == ByteCode.CallReturn then
-            for k, value in ipairs(returns) do
-                self:push(value)
+        if type(func) == "function" then
+            local returns = { pcall(func, table.unpack(args)) }
+            local success = table.remove(returns, 1)
+            if not success then
+                return nil, fromLuaError(returns), Position.new(self.file, ln, ln, col, col)
             end
+            if instr == ByteCode.CallReturn then
+                for k, value in ipairs(returns) do
+                    self:push(value)
+                end
+            end
+        elseif type(func) == "number" then
+            self:newCall(self.ip + INSTRUCTION_SIZE)
+            self.ip = func
+        else
+            return nil, ("attempt to call a %s value"):format(type(func)), Position.new(self.file, ln, ln, col, col)
         end
         self.ip = self.ip + INSTRUCTION_SIZE
     elseif instr == ByteCode.Nil then
